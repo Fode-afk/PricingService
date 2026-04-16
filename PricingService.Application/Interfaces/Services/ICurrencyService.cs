@@ -1,0 +1,11 @@
+﻿using migApp.Shared.Dtos.CurrencyService;
+
+namespace PricingService.Application.Interfaces.Services;
+
+public interface ICurrencyService
+{
+    Task<decimal?> GetExchangeRateAsync(
+       string sourceCurrency,
+       string targetCurrency,
+       CancellationToken cancellationToken = default);
+}

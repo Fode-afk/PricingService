@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\Migrations\" />
+    <Folder Include="DependencyInjection\" />
+    <Folder Include="Messaging\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.76.0" />
+    <PackageReference Include="Grpc.AspNetCore.Server" Version="2.76.0" />
+    <PackageReference Include="Grpc.HealthCheck" Version="2.76.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.76.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.80.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="MassTransit" Version="8.5.8" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.5.8" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.5" />
+    <PackageReference Include="Polly" Version="8.6.6" />
+    <PackageReference Include="ZiggyCreatures.FusionCache" Version="2.6.0" />
+    <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" Version="2.6.0" />
+    <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.NewtonsoftJson" Version="2.6.0" />
+    <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" Version="2.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PricingService.Application\PricingService.Application.csproj" />
+    <ProjectReference Include="..\PricingService.Domain\PricingService.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+  	<Protobuf Include="Services\Grpc\Protos\CurrencyService.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+	<ItemGroup>
+    <Reference Include="migApp.Shared">
+      <HintPath>..\..\migApp.Shared\bin\Debug\net10.0\migApp.Shared.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
