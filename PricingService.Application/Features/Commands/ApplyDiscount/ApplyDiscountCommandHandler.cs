@@ -41,25 +41,25 @@ public sealed class ApplyDiscountCommandHandler(
         var discountAmountInUsd = discountAmountInUsdResult.Value;
 
         DiscountSnapshot? discountSnapshot = null;
-        switch (request.DiscountType)
-        {
-            case DiscountType.AmountOff:
-                discountSnapshot = DiscountSnapshot.CreateAmountOff(
-                    request.DiscountId, 
-                    discountAmountInUsd, 
-                    request.Start,
-                    request.End);
-                break;
-            case DiscountType.FixedPrice:
-                discountSnapshot = DiscountSnapshot.CreateFixed(
-                    request.DiscountId,
-                    discountAmountInUsd,
-                    request.Start,
-                    request.End);
-                break;
-            default:
-                break;
-        }
+        //switch (request.DiscountType)
+        //{
+        //    case DiscountType.AmountOff:
+        //        discountSnapshot = DiscountSnapshot.CreateAmountOff(
+        //            request.DiscountId, 
+        //            discountAmountInUsd, 
+        //            request.Start,
+        //            request.End);
+        //        break;
+        //    case DiscountType.FixedPrice:
+        //        discountSnapshot = DiscountSnapshot.CreateFixed(
+        //            request.DiscountId,
+        //            discountAmountInUsd,
+        //            request.Start,
+        //            request.End);
+        //        break;
+        //    default:
+        //        break;
+        //}
 
         if (discountSnapshot == null)
         {

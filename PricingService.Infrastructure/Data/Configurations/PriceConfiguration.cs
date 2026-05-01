@@ -6,7 +6,7 @@ using PricingService.Domain.ValueObjects;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace PricingService.Infrastructure.Prices;
+namespace PricingService.Infrastructure.Data.Configurations;
 
 internal sealed class PriceConfiguration : IEntityTypeConfiguration<Price>
 {
@@ -32,7 +32,12 @@ internal sealed class PriceConfiguration : IEntityTypeConfiguration<Price>
                 value => Money.Create(value, Currency.USD).Value)
             .IsRequired();
 
-        builder.Property(x => x.Discount)
+        builder.Property(x => x.CurrentPrice)
+            .HasConversion(
+                currentPrice => currentPrice.Amount,
+                value => Money.Create(value, Currency.USD).Value);
+
+        builder.Property(x => x.AppliedDiscount)
             .HasConversion(
                 v => JsonSerializer.Serialize(v, JsonOptions),
                 v => JsonSerializer.Deserialize<DiscountSnapshot>(v, JsonOptions));

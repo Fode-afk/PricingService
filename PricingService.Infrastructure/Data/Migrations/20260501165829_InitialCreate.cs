@@ -59,6 +59,34 @@ namespace PricingService.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PriceReadModels",
+                schema: "prices",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BasePrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    CurrentPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    DiscountId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    DiscountType = table.Column<int>(type: "int", nullable: true),
+                    Percentage = table.Column<decimal>(type: "decimal(5,2)", precision: 5, scale: 2, nullable: true),
+                    FixedPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    AmountOff = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    CampaignName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    Priority = table.Column<int>(type: "int", nullable: true),
+                    IsStackable = table.Column<bool>(type: "bit", nullable: true),
+                    DiscountStart = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    DiscountEnd = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PriceReadModels", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Prices",
                 schema: "prices",
                 columns: table => new
@@ -66,7 +94,8 @@ namespace PricingService.Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BasePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Discount = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CurrentPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AppliedDiscount = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
@@ -74,6 +103,22 @@ namespace PricingService.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Prices", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductSnapshots",
+                schema: "prices",
+                columns: table => new
+                {
+                    ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VendorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProductCardId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductSnapshots", x => x.ProductId);
                 });
 
             migrationBuilder.CreateTable(
@@ -162,10 +207,35 @@ namespace PricingService.Infrastructure.Data.Migrations
                 column: "Created");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PriceReadModels_CurrentPrice",
+                schema: "prices",
+                table: "PriceReadModels",
+                column: "CurrentPrice");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PriceReadModels_DiscountId",
+                schema: "prices",
+                table: "PriceReadModels",
+                column: "DiscountId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PriceReadModels_ProductId",
+                schema: "prices",
+                table: "PriceReadModels",
+                column: "ProductId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Prices_ProductId",
                 schema: "prices",
                 table: "Prices",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductSnapshots_VendorId",
+                schema: "prices",
+                table: "ProductSnapshots",
+                column: "VendorId");
         }
 
         /// <inheritdoc />
@@ -176,7 +246,15 @@ namespace PricingService.Infrastructure.Data.Migrations
                 schema: "messaging");
 
             migrationBuilder.DropTable(
+                name: "PriceReadModels",
+                schema: "prices");
+
+            migrationBuilder.DropTable(
                 name: "Prices",
+                schema: "prices");
+
+            migrationBuilder.DropTable(
+                name: "ProductSnapshots",
                 schema: "prices");
 
             migrationBuilder.DropTable(

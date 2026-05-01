@@ -13,6 +13,9 @@ internal sealed class AppDbContext(
     IDomainEventsDispatcher domainEventsDispatcher) : DbContext(options), IAppDbContext
 {
     public DbSet<Price> Prices { get; set; }
+    public DbSet<PriceReadModel> PriceReadModels { get; set; }
+
+    public DbSet<ProductSnapshot> ProductSnapshots { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

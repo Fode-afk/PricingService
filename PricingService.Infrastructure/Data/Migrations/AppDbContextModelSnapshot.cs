@@ -199,14 +199,17 @@ namespace PricingService.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AppliedDiscount")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<string>("Discount")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<decimal>("CurrentPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
@@ -225,6 +228,107 @@ namespace PricingService.Infrastructure.Data.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("Prices", "prices");
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Models.PriceReadModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("AmountOff")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CampaignName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("CurrentPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset?>("DiscountEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("DiscountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("DiscountStart")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("DiscountType")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("FixedPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool?>("IsStackable")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("Percentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrentPrice");
+
+                    b.HasIndex("DiscountId");
+
+                    b.HasIndex("ProductId")
+                        .IsUnique();
+
+                    b.ToTable("PriceReadModels", "prices");
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Models.ProductSnapshot", b =>
+                {
+                    b.Property<Guid>("ProductId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductCardId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ProductId");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("ProductSnapshots", "prices");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

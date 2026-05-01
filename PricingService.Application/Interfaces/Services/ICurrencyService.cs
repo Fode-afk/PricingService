@@ -1,6 +1,4 @@
-﻿using migApp.Shared.Dtos.CurrencyService;
-
-namespace PricingService.Application.Interfaces.Services;
+﻿namespace PricingService.Application.Interfaces.Services;
 
 public interface ICurrencyService
 {

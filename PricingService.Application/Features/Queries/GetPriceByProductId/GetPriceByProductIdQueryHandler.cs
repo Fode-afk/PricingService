@@ -1,7 +1,6 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using migApp.Shared.Domain.ValueObjects;
-using migApp.Shared.Dtos.CurrencyService;
+using migApp.Shared.Enums.Discounts;
 using migApp.Shared.Results;
 using PricingService.Application.Caching;
 using PricingService.Application.Dtos;
@@ -14,8 +13,8 @@ using static migApp.Shared.Results.ResultFactory;
 namespace PricingService.Application.Features.Queries.GetPriceByProductId;
 
 public sealed class GetPriceByProductIdQueryHandler(
+    IPriceReadRepository priceReadRepository,
     IFusionCache cache, 
-    IAppDbContext context,
     IMoneyConverter moneyConverter) : IRequestHandler<GetPriceByProductIdQuery, IResult<PriceDto>>
 {
     public async Task<IResult<PriceDto>> Handle(GetPriceByProductIdQuery request, CancellationToken cancellationToken)
@@ -43,84 +42,107 @@ public sealed class GetPriceByProductIdQueryHandler(
         Currency currency,
         CancellationToken cancellationToken = default)
     {
-        var price = await context.Prices
-            .FirstOrDefaultAsync(p => p.ProductId == productId, cancellationToken);
+        var price = await priceReadRepository.GetByProductId(productId, cancellationToken);
 
         if (price == null)
             return null;
 
-        var convertedBasePriceResult = await moneyConverter.ConvertAsync(price.BasePrice, currency, cancellationToken);
-        if (convertedBasePriceResult.IsFailure)
-            return null;
-
-        var convertedBasePrice = convertedBasePriceResult.Value;
-
-        var convertedBasePriceMinorResult = Money.ToMinor(
-            convertedBasePrice.Amount,
-            convertedBasePrice.Currency);
+        var convertedBasePriceMinorResult = await ConvertUsdToTargetMinorAsync(
+            price.BasePrice,
+            currency,
+            cancellationToken);
         if (convertedBasePriceMinorResult.IsFailure)
             return null;
 
-        var discount = price.Discount;
+        var convertedCurrentPriceMinorResult = await ConvertUsdToTargetMinorAsync(
+            price.CurrentPrice,
+            currency,
+            cancellationToken);
+        if (convertedCurrentPriceMinorResult.IsFailure)
+            return null;
 
         long? convertedFixedPriceMinor = null;
         long? convertedAmountOffMinor = null;
 
-        if (discount != null)
+        DiscountDto? discountDto = null;
+
+        if (price.DiscountId != null)
         {
-            if (discount.FixedPrice != null)
+            if (price.FixedPrice != null)
             {
-                var convertedFixedPriceResult = await moneyConverter.ConvertAsync(discount.FixedPrice, currency, cancellationToken);
-                if (convertedFixedPriceResult.IsFailure)
-                    return null;
-
-                var convertedFixedPrice = convertedFixedPriceResult.Value;
-
-                var convertedFixedPriceMinorResult = Money.ToMinor(
-                    convertedFixedPrice.Amount,
-                    convertedFixedPrice.Currency);
+                var convertedFixedPriceMinorResult = await ConvertUsdToTargetMinorAsync(
+                    price.FixedPrice.Value,
+                    currency,
+                    cancellationToken);                 
                 if (convertedFixedPriceMinorResult.IsFailure)
                     return null;
 
                 convertedFixedPriceMinor = convertedFixedPriceMinorResult.Value;
             }
 
-            if (discount.AmountOff != null)
+            if (price.AmountOff != null)
             {
-                var convertedAmountOffResult = await moneyConverter.ConvertAsync(discount.AmountOff, currency, cancellationToken);
-                if (convertedAmountOffResult.IsFailure)
-                    return null;
-
-                var convertedAmountOff = convertedAmountOffResult.Value;
-
-                var convertedAmountOffMinorResult = Money.ToMinor(
-                    convertedAmountOff.Amount,
-                    convertedAmountOff.Currency);
+                var convertedAmountOffMinorResult = await ConvertUsdToTargetMinorAsync(
+                    price.AmountOff.Value,
+                    currency,
+                    cancellationToken);          
                 if (convertedAmountOffMinorResult.IsFailure)
                     return null;
 
                 convertedAmountOffMinor = convertedAmountOffMinorResult.Value;
             }
-        }
 
-        DiscountDto? discountDto = null;
-
-        if (discount != null)
-        {
             discountDto = new DiscountDto(
-                discount.DiscountId,
-                discount.Type,
-                discount.Percentage,
+                price.DiscountId.Value,
+                (DiscountType)price.DiscountType!,
+                price.Percentage,
                 convertedFixedPriceMinor,
                 convertedAmountOffMinor,
-                discount.Start,
-                discount.End);
+                price.CampaignName,
+                price.Priority!.Value,
+                price.IsStackable!.Value,
+                price.DiscountStart!.Value,
+                price.DiscountEnd!.Value);
         }
 
         return new PriceDto(
             price.ProductId,
             convertedBasePriceMinorResult.Value,
+            convertedCurrentPriceMinorResult.Value,
             currency.Code,
             discountDto);
+    }
+
+    private async Task<IResult<long>> ConvertUsdToTargetMinorAsync(
+        decimal usdAmount,
+        Currency targetCurrency,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var usdMoneyResult = Money.Create(usdAmount, Currency.USD);
+        if (usdMoneyResult.IsFailure)
+            return Fail<long>(usdMoneyResult.Error);
+
+        var money = usdMoneyResult.Value;
+
+        if (targetCurrency != Currency.USD)
+        {
+            var converted = await moneyConverter.ConvertAsync(
+                money,
+                targetCurrency,
+                cancellationToken);
+
+            if (converted.IsFailure)
+                return Fail<long>(converted.Error);
+
+            money = converted.Value;
+        }
+
+        var minorResult = Money.ToMinor(money.Amount, targetCurrency);
+
+        return minorResult.IsFailure
+            ? Fail<long>(minorResult.Error)
+            : Ok(minorResult.Value);
     }
 }

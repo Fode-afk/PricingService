@@ -8,5 +8,8 @@ public sealed record DiscountDto(
     decimal? Percentage,
     long? FixedPriceMinor,
     long? AmountOffMinor,
+    string? CampaignName,
+    int Priority,
+    bool IsStackable,
     DateTimeOffset Start,
     DateTimeOffset End);

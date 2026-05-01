@@ -13,10 +13,12 @@ using PricingService.Application.Interfaces.Data;
 using PricingService.Application.Interfaces.Services;
 using PricingService.Domain.Primitives;
 using PricingService.Infrastructure.Data;
+using PricingService.Infrastructure.Data.Repositories;
 using PricingService.Infrastructure.DependencyInjection;
 using PricingService.Infrastructure.DomainEvents;
 using PricingService.Infrastructure.Messaging.Consumers;
 using PricingService.Infrastructure.Messaging.IntegrationEvents;
+using PricingService.Infrastructure.Services;
 using PricingService.Infrastructure.Services.Grpc.Clients;
 using RabbitMQ.Client;
 using ZiggyCreatures.Caching.Fusion;
@@ -41,6 +43,11 @@ public static class InfrastructureExtensions
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<ICurrencyService, CurrencyServiceClient>();
+        services.AddScoped<IExchangeRateService, ExchangeRateService>();
+        services.AddScoped<IMoneyConverter, MoneyConverter>();
+
+        services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
+        services.AddScoped<IPriceReadRepository, PriceReadRepository>();
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 

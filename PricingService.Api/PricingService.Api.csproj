@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,6 +20,16 @@
   <ItemGroup>
     <ProjectReference Include="..\PricingService.Application\PricingService.Application.csproj" />
     <ProjectReference Include="..\PricingService.Infrastructure\PricingService.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+  	<Protobuf Include="Grpc\V1\Protos\PricingService.proto" GrpcServices="Server" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <Reference Include="migApp.Shared">
+      <HintPath>..\..\migApp.Shared\bin\Debug\net10.0\migApp.Shared.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

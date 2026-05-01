@@ -10,6 +10,7 @@ public static class PricingErrors
     public static Error InvalidDiscount() => Error.InvalidArgument(PricingErrorCodes.InvalidDiscount);
     public static Error DiscountAlreadySet() => Error.InvalidArgument(PricingErrorCodes.DiscountAlreadySet);
     public static Error NotFound() => Error.NotFound(PricingErrorCodes.NotFound);
+    public static Error AlreadyExists() => Error.AlreadyExists(PricingErrorCodes.AlreadyExists);
 }
 
 public static class PricingErrorCodes
@@ -20,4 +21,5 @@ public static class PricingErrorCodes
     public const string InvalidDiscount = "Pricing.InvalidDiscount";
     public const string DiscountAlreadySet = "Pricing.DiscountAlreadySet";
     public const string NotFound = "Pricing.NotFound";
+    public const string AlreadyExists = "Pricing.AlreadyExists";
 }

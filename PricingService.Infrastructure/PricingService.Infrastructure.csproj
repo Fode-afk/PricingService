@@ -9,10 +9,10 @@
   <ItemGroup>
     <Folder Include="Data\Migrations\" />
     <Folder Include="DependencyInjection\" />
-    <Folder Include="Messaging\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.72" />
     <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.76.0" />
     <PackageReference Include="Grpc.AspNetCore.Server" Version="2.76.0" />
     <PackageReference Include="Grpc.HealthCheck" Version="2.76.0" />
