@@ -32,7 +32,20 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.5" />
-    <PackageReference Include="Polly" Version="8.6.6" />
+	<PackageReference Include="OpenTelemetry" Version="1.15.3" />
+	<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+	<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+	<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+	<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+	<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+	<PackageReference Include="Polly" Version="8.6.6" />
+	<PackageReference Include="Scrutor" Version="7.0.0" />
+	<PackageReference Include="Serilog" Version="4.3.1" />
+	<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+	<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+	<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+	<PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
+	<PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageReference Include="ZiggyCreatures.FusionCache" Version="2.6.0" />
     <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" Version="2.6.0" />
     <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.NewtonsoftJson" Version="2.6.0" />

@@ -1,46 +1,35 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using migApp.Shared.Domain.ValueObjects;
 using PricingService.Domain.Models;
-using PricingService.Domain.ValueObjects;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace PricingService.Infrastructure.Data.Configurations;
 
 internal sealed class PriceConfiguration : IEntityTypeConfiguration<Price>
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        Converters =
-        {
-            new JsonStringEnumConverter()
-        }
-    };
-
     public void Configure(EntityTypeBuilder<Price> builder)
     {
+        builder.ToTable("Prices", Schemas.PricesWrite);
+
         builder.HasKey(x => x.Id);
 
-        builder.HasIndex(x => x.ProductId);
+        builder.HasIndex(x => x.ProductVariantId).IsUnique();
+        builder.HasIndex(x => x.VendorId);
 
-        builder.Property(x => x.BasePrice)
-            .HasConversion(
-                basePrice => basePrice.Amount,
-                value => Money.Create(value, Currency.USD).Value)
-            .IsRequired();
+        builder.HasMany(p => p.Entries)
+            .WithOne()
+            .HasForeignKey("PriceId")
+            .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(x => x.CurrentPrice)
-            .HasConversion(
-                currentPrice => currentPrice.Amount,
-                value => Money.Create(value, Currency.USD).Value);
+        builder.HasMany(p => p.History)
+            .WithOne()
+            .HasForeignKey("PriceId")
+            .OnDelete(DeleteBehavior.Cascade);
 
-        builder.Property(x => x.AppliedDiscount)
-            .HasConversion(
-                v => JsonSerializer.Serialize(v, JsonOptions),
-                v => JsonSerializer.Deserialize<DiscountSnapshot>(v, JsonOptions));
+        builder.Navigation(p => p.Entries)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(p => p.History)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(x => x.RowVersion)
             .IsRowVersion()

@@ -4,6 +4,7 @@ using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Application.Interfaces.Data;
 using PricingService.Application.Interfaces.Services;
+using PricingService.Domain.Context;
 using PricingService.Domain.Errors;
 using PricingService.Domain.Models;
 using static migApp.Shared.Results.ResultFactory;
@@ -17,24 +18,26 @@ public sealed class CreatePriceCommandHandler(
 {
     public async Task<IResult> Handle(CreatePriceCommand request, CancellationToken cancellationToken)
     {
-        var product = await context.ProductSnapshots
+        var vendorSnapshot = await context.VendorSnapshots
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.ProductId == request.ProductId, cancellationToken);
+            .FirstOrDefaultAsync(v => v.VendorId == request.VendorId, cancellationToken);
+        if (vendorSnapshot is null)
+            return Fail(VendorSnapshotErrors.NotFound());
 
-        if (product == null)
+        var variantSnapshot = await context.ProductVariantSnapshots
+            .AsNoTracking()
+            .FirstOrDefaultAsync(pv => pv.ProductVariantId == request.ProductVariantId, cancellationToken);
+        if (variantSnapshot is null)
+            return Fail(ProductVariantSnapshotErrors.NotFound());
+
+        var productSnapshot = await context.ProductSnapshots
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ProductId == variantSnapshot.ProductId, cancellationToken);
+        if (productSnapshot is null)
             return Fail(ProductSnapshotErrors.NotFound());
 
-        if (product.VendorId != request.VendorId)
-            return Fail(ProductSnapshotErrors.InvalidVendor());
-
-        if (product.Status == ProductCardStatus.Archived)
-            return Fail(ProductSnapshotErrors.CannotModifyWhenArchived());
-
-        var exists = await context.Prices.AnyAsync(p =>
-            p.ProductId == request.ProductId,
-            cancellationToken);
-        if (exists)
-            return Fail(PricingErrors.AlreadyExists());
+        if (productSnapshot.VendorId != request.VendorId)
+            return Fail(ProductSnapshotErrors.DoesNotBelongToVendor());
 
         var currencyResult = Currency.Create(request.Currency);
         if (currencyResult.IsFailure)
@@ -51,11 +54,18 @@ public sealed class CreatePriceCommandHandler(
         if (basePriceInUsdResult.IsFailure)
             return basePriceInUsdResult;
 
+        var ctx = new PriceCreationContext(
+            vendorSnapshot.IsActive,
+            productSnapshot.CanBeModified);
+
         var result = Price.Create(
-            request.ProductId,
+            ctx,
+            request.ProductVariantId,
             request.VendorId,
             basePriceInUsdResult.Value,
-            timeProvider.GetUtcNow());
+            createdBy: request.VendorId,
+            timeProvider.GetUtcNow(),
+            request.EffectiveFrom);
         if (result.IsFailure)
             return result;
 

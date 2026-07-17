@@ -14,4 +14,11 @@ public static class HostExtensions
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
     }
+
+    public static async Task SeedDatabaseAsync(this IHost host)
+    {
+        using var scope = host.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await DbContextSeed.SeedAsync(db);
+    }
 }

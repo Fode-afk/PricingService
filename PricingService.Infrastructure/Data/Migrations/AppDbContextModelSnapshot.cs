@@ -17,7 +17,7 @@ namespace PricingService.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("prices")
+                .HasDefaultSchema("prices_write")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -199,19 +199,10 @@ namespace PricingService.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AppliedDiscount")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("BasePrice")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<decimal>("CurrentPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("ProductVariantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -223,94 +214,132 @@ namespace PricingService.Infrastructure.Data.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("ProductVariantId")
+                        .IsUnique();
 
-                    b.ToTable("Prices", "prices");
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("Prices", "prices_write");
                 });
 
-            modelBuilder.Entity("PricingService.Domain.Models.PriceReadModel", b =>
+            modelBuilder.Entity("PricingService.Domain.Models.PriceEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal?>("AmountOff")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("BasePrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("CampaignName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset>("EffectiveFrom")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<decimal>("CurrentPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTimeOffset?>("DiscountEnd")
+                    b.Property<DateTimeOffset?>("EffectiveTo")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<Guid?>("DiscountId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("DiscountStart")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int?>("DiscountType")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("FixedPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool?>("IsStackable")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal?>("Percentage")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<int?>("Priority")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ProductId")
+                    b.Property<Guid>("PriceId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
+                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CurrentPrice");
+                    b.HasIndex("PriceId");
 
-                    b.HasIndex("DiscountId");
-
-                    b.HasIndex("ProductId")
-                        .IsUnique();
-
-                    b.ToTable("PriceReadModels", "prices");
+                    b.ToTable("PriceEntries", "prices_write");
                 });
 
-            modelBuilder.Entity("PricingService.Domain.Models.ProductSnapshot", b =>
+            modelBuilder.Entity("PricingService.Domain.Models.PriceHistoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("PriceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReasonNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PriceId");
+
+                    b.ToTable("PriceHistoryEntries", "prices_write");
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Snapshots.ProductSnapshot", b =>
                 {
                     b.Property<Guid>("ProductId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ProductCardId")
+                    b.Property<bool>("CanBeModified")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("ProductId");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("ProductSnapshots", "prices_write");
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Snapshots.ProductVariantSnapshot", b =>
+                {
+                    b.Property<Guid>("ProductVariantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -318,17 +347,42 @@ namespace PricingService.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
 
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("ProductVariantId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductVariantSnapshots", "prices_write");
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Snapshots.VendorSnapshot", b =>
+                {
                     b.Property<Guid>("VendorId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("ProductId");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
-                    b.HasIndex("VendorId");
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
-                    b.ToTable("ProductSnapshots", "prices");
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("VendorId");
+
+                    b.ToTable("VendorSnapshots", "prices_write");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
@@ -341,6 +395,31 @@ namespace PricingService.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("InboxMessageId", "InboxConsumerId")
                         .HasPrincipalKey("MessageId", "ConsumerId");
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Models.PriceEntry", b =>
+                {
+                    b.HasOne("PricingService.Domain.Models.Price", null)
+                        .WithMany("Entries")
+                        .HasForeignKey("PriceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Models.PriceHistoryEntry", b =>
+                {
+                    b.HasOne("PricingService.Domain.Models.Price", null)
+                        .WithMany("History")
+                        .HasForeignKey("PriceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PricingService.Domain.Models.Price", b =>
+                {
+                    b.Navigation("Entries");
+
+                    b.Navigation("History");
                 });
 #pragma warning restore 612, 618
         }

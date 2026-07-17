@@ -20,4 +20,9 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Abstractions\" />
+    <Folder Include="Specifications\Product\" />
+  </ItemGroup>
+
 </Project>

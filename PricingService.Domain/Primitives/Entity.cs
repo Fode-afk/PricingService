@@ -6,6 +6,9 @@ public abstract class Entity(Guid id) : IEquatable<Entity>
 
     public byte[] RowVersion { get; private set; } = [];
 
+    public long Version { get; private set; } = 0;
+    public void IncreaseVersion() => Version++;
+
     public bool Equals(Entity? other)
     {
         if (other is null)

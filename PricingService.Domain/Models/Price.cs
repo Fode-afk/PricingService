@@ -1,9 +1,11 @@
 ﻿using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
+using PricingService.Domain.Context;
 using PricingService.Domain.DomainEvents;
-using PricingService.Domain.Errors;
+using PricingService.Domain.Enums;
+using PricingService.Domain.Exceptions;
 using PricingService.Domain.Primitives;
-using PricingService.Domain.ValueObjects;
+using PricingService.Domain.Specifications.Price;
 using static migApp.Shared.Results.ResultFactory;
 
 namespace PricingService.Domain.Models;
@@ -14,182 +16,169 @@ public sealed class Price : AggregateRoot
 
     private Price(
         Guid id,
-        Guid productId,
-        Money basePrice,
+        Guid productVariantId,
+        Guid vendorId,
         DateTimeOffset createdAt) : base(id)
     {
-        ProductId = productId;
-        BasePrice = basePrice;
-        CurrentPrice = basePrice;
+        ProductVariantId = productVariantId;
+        VendorId = vendorId;
         CreatedAt = createdAt;
     }
 
-    public Guid ProductId { get; private set; }
-
-    public Money BasePrice { get; private set; }
-    public Money CurrentPrice { get; private set; }
-    public DiscountSnapshot? AppliedDiscount { get; private set; }
+    public Guid ProductVariantId { get; private set; }
+    public Guid VendorId { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? UpdatedAt { get; private set; }
 
-    public bool HasActiveDiscount(DateTimeOffset now)
-        => AppliedDiscount is not null && AppliedDiscount.IsActive(now);
+    private readonly List<PriceEntry> _entries = [];
+    public IReadOnlyList<PriceEntry> Entries => _entries.AsReadOnly();
+
+    private readonly List<PriceHistoryEntry> _history = [];
+    public IReadOnlyList<PriceHistoryEntry> History => _history.AsReadOnly();
+
+    public PriceEntry CurrentEntry(DateTimeOffset now) =>
+        _entries
+            .Where(e => e.IsActiveAt(now))
+            .MaxBy(e => e.EffectiveFrom) ?? throw new ActivePriceNotFoundException(Id);
+
+    public PriceEntry? NextScheduledEntry(DateTimeOffset now) =>
+        _entries
+            .Where(e => e.IsScheduled(now))
+            .MinBy(e => e.EffectiveFrom);
+
+    public bool HasActivePrice(DateTimeOffset now) => CurrentEntry(now) != null;
 
     public static IResult<Price> Create(
-        Guid productId,
+        PriceCreationContext ctx,
+        Guid productVariantId,
         Guid vendorId,
-        Money basePrice,
-        DateTimeOffset now)
+        Money initialAmount,
+        Guid createdBy,
+        DateTimeOffset now,
+        DateTimeOffset? effectiveFrom = null)
     {
-        if (basePrice is null)
-            return Fail<Price>(PricingErrors.BasePriceIsRequired());
+        var result = PriceCreationSpecification.Spec.IsSatisfiedBy(ctx);
+        if (result.IsFailure)
+            return Fail<Price>(result.Error);
 
-        var price = new Price(
-            Guid.NewGuid(),
-            productId,
-            basePrice,
+        var price = new Price(Guid.NewGuid(), productVariantId, vendorId, now);
+
+        var entryResult = PriceEntry.Create(price.Id, initialAmount, effectiveFrom ?? now);
+        if (entryResult.IsFailure)
+            return Fail<Price>(entryResult.Error);
+
+        var entry = entryResult.Value;
+        price._entries.Add(entry);
+
+        var snapshot = PriceHistoryEntry.Record(
+            price.Id,
+            initialAmount,
+            PriceChangeReason.Initial,
+            createdBy,
+            source: "manual",
             now);
+        price._history.Add(snapshot);
 
-        price.RaiseDomainEvent(new PriceCreatedDomainEvent(vendorId, price));
+        price.RaiseDomainEvent(new PriceCreatedDomainEvent(
+            price.ProductVariantId,
+            price.HasActivePrice(now),
+            price.Version));
 
         return Ok(price);
     }
 
-    public IResult UpdateBasePrice(Money newPrice, DateTimeOffset now)
+    public IResult UpdatePrice(
+        UpdatePriceContext ctx,
+        Money newAmount,
+        Guid changedBy,
+        PriceChangeReason reason,
+        string source,
+        DateTimeOffset now,
+        DateTimeOffset? effectiveFrom = null,
+        DateTimeOffset? effectiveTo = null,
+        string? reasonNote = null)
     {
-        if (newPrice is null)
-            return Fail(PricingErrors.BasePriceIsRequired());
-
-        if (BasePrice == newPrice)
-            return Ok();
-
-        BasePrice = newPrice;
-
-        var recalculateResult = RecalculateCurrentPrice(now);
-        if (recalculateResult.IsFailure)
-            return recalculateResult;
-
-        UpdatedAt = now;
-
-        RaiseDomainEvent(new BasePriceUpdatedDomainEvent(Id, ProductId, newPrice));
-
-        return Ok();
-    }
-
-    public IResult SetDiscount(DiscountSnapshot discount, DateTimeOffset now)
-    {
-        if (discount is null)
-            return Fail(PricingErrors.DiscountIsRequired());
-
-        if (!discount.IsActive(now))
-            return Fail(PricingErrors.DiscountIsRequired());
-
-        if (AppliedDiscount is not null)
-            return Fail(PricingErrors.DiscountAlreadySet());
-
-        var discountedResult = discount.Apply(BasePrice, now);
-
-        if (discountedResult.IsFailure)
-            return discountedResult;
-
-        if (discountedResult.Value >= BasePrice)
-            return Fail(PricingErrors.InvalidDiscount());
-
-        AppliedDiscount = discount;
-        CurrentPrice = discountedResult.Value;
-
-        UpdatedAt = now;
-
-        RaiseDomainEvent(new DiscountAppliedDomainEvent(Id, discount.DiscountId));
-
-        return Ok();
-    }
-
-    public IResult ReplaceDiscount(DiscountSnapshot discount, DateTimeOffset now)
-    {
-        if (discount is null)
-            return Fail(PricingErrors.DiscountIsRequired());
-
-        if (discount.IsExpired(now))
-            return Fail(PricingErrors.InvalidDiscount());
-
-        var discountedResult = discount.Apply(BasePrice, now);
-
-        if (discountedResult.IsFailure)
-            return discountedResult;
-
-        if (discountedResult.Value >= BasePrice)
-            return Fail(PricingErrors.InvalidDiscount());
-
-        AppliedDiscount = discount;
-        CurrentPrice = discountedResult.Value;
-
-        UpdatedAt = now;
-
-        RaiseDomainEvent(new DiscountAppliedDomainEvent(Id, discount.DiscountId));
-
-        return Ok();
-    }
-
-    public IResult RemoveDiscount(DateTimeOffset now)
-    {
-        if (AppliedDiscount is null)
-            return Ok();
-
-        AppliedDiscount = null;
-        CurrentPrice = BasePrice;
-
-        UpdatedAt = now;
-
-        RaiseDomainEvent(new DiscountRemovedDomainEvent(Id));
-
-        return Ok();
-    }
-
-    public IResult<Money> GetCurrentPrice(DateTimeOffset now)
-    {
-        if (AppliedDiscount is null)
-            return Ok(BasePrice);
-
-        return AppliedDiscount.Apply(BasePrice, now);
-    }
-
-    public IResult RefreshPrice(DateTimeOffset now)
-    {
-        var result = RecalculateCurrentPrice(now);
-
+        var result = UpdatePriceSpecification.Spec.IsSatisfiedBy(ctx);
         if (result.IsFailure)
             return result;
 
+        var from = effectiveFrom ?? now;
+
+        var conflictingScheduled = _entries
+            .Where(e => e.IsScheduled(now))
+            .Where(e => effectiveTo == null
+                ? e.EffectiveFrom >= from
+                : e.EffectiveFrom >= from && e.EffectiveFrom < effectiveTo)
+            .ToList();
+
+        foreach (var conflict in conflictingScheduled)
+            _entries.Remove(conflict);
+
+        var activeEntry = _entries.FirstOrDefault(e => e.IsActiveAt(from));
+        if (activeEntry is not null)
+        {
+            var closeResult = activeEntry.Close(from);
+            if (closeResult.IsFailure)
+                return closeResult;
+        }
+
+        if (effectiveTo.HasValue)
+        {
+            var entryAtEnd = _entries.FirstOrDefault(e => e.IsActiveAt(effectiveTo.Value));
+            if (entryAtEnd is not null && entryAtEnd != activeEntry)
+            {
+                var closeResult = entryAtEnd.Close(effectiveTo.Value);
+                if (closeResult.IsFailure)
+                    return closeResult;
+            }
+        }
+
+        var newEntryResult = PriceEntry.Create(Id, newAmount, from, effectiveTo);
+        if (newEntryResult.IsFailure)
+            return newEntryResult;
+
+        _entries.Add(newEntryResult.Value);
+
+        var historyEntry = PriceHistoryEntry.Record(
+            Id,
+            newAmount,
+            reason,
+            changedBy,
+            source,
+            now,
+            reasonNote);
+        _history.Add(historyEntry);
+
         UpdatedAt = now;
-        
-        RaiseDomainEvent(new PriceRefreshedDomainEvent(Id));
+        IncreaseVersion();
+
+        RaiseDomainEvent(new PriceUpdatedDomainEvent(
+            ProductVariantId,
+            HasActivePrice(now),
+            Version));
 
         return Ok();
     }
 
-    private IResult RecalculateCurrentPrice(DateTimeOffset now)
+    public IResult Archive(DateTimeOffset now)
     {
-        if (AppliedDiscount is null)
+        var scheduled = _entries.Where(e => e.IsScheduled(now)).ToList();
+        foreach (var entry in scheduled)
+            _entries.Remove(entry);
+
+        var activeEntry = _entries.FirstOrDefault(e => e.IsActiveAt(now));
+        if (activeEntry is not null)
         {
-            CurrentPrice = BasePrice;
-            return Ok();
+            var result = activeEntry.Close(now);
+            if (result.IsFailure)
+                return result;
         }
 
-        if (AppliedDiscount.IsExpired(now))
-        {
-            AppliedDiscount = null;
-            CurrentPrice = BasePrice;
-            return Ok();
-        }
+        UpdatedAt = now;
+        IncreaseVersion();
 
-        var discountedResult = AppliedDiscount.Apply(BasePrice, now);
-
-        if (discountedResult.IsFailure)
-            return discountedResult;
-
-        CurrentPrice = discountedResult.Value;
+        RaiseDomainEvent(new PriceArchivedDomainEvent(ProductVariantId));
 
         return Ok();
     }

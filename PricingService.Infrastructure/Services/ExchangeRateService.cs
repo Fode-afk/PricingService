@@ -1,5 +1,4 @@
 ﻿using migApp.Shared.Domain.ValueObjects;
-using PricingService.Application.Caching;
 using PricingService.Application.Interfaces.Services;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -7,18 +6,20 @@ namespace PricingService.Infrastructure.Services;
 
 internal sealed class ExchangeRateService(IFusionCache cache, ICurrencyService currencyService) : IExchangeRateService
 {
+    private static string ExchangeRateByCurrency(string currency) => $"ExchangeRate:{currency}";
+
     public async Task<decimal?> GetExchangeRateAsync(Currency sourceCurrency, Currency targetCurrency, CancellationToken cancellationToken = default)
     {
         if (sourceCurrency == targetCurrency)
             return 1m;
 
         var sourceCurrencyRate = await cache.GetOrDefaultAsync<decimal?>(
-            CacheKeys.ExchangeRateByCurrency(sourceCurrency.Code),
+            ExchangeRateByCurrency(sourceCurrency.Code),
             options: new FusionCacheEntryOptions { Duration = TimeSpan.FromHours(1) },
             token: cancellationToken);
 
         var targetCurrencyRate = await cache.GetOrDefaultAsync<decimal?>(
-            CacheKeys.ExchangeRateByCurrency(targetCurrency.Code),
+            ExchangeRateByCurrency(targetCurrency.Code),
             options: new FusionCacheEntryOptions { Duration = TimeSpan.FromHours(1) },
             token: cancellationToken);
 
@@ -35,7 +36,7 @@ internal sealed class ExchangeRateService(IFusionCache cache, ICurrencyService c
     {
         var tasks = rates.Select(async rate =>
             await cache.SetAsync(
-                    CacheKeys.ExchangeRateByCurrency(rate.Key),
+                    ExchangeRateByCurrency(rate.Key),
                     rate.Value,
                     options: new FusionCacheEntryOptions { Duration = TimeSpan.FromHours(1) },
                     token: cancellationToken));

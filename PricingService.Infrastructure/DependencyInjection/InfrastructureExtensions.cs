@@ -1,23 +1,30 @@
 ﻿using MassTransit;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using migApp.Shared.Behaviours;
 using migApp.Shared.Caching;
 using migApp.Shared.Grpc;
 using migApp.Shared.Utils;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Polly;
 using PricingService.Application.Interfaces.Data;
+using PricingService.Application.Interfaces.Metrics;
 using PricingService.Application.Interfaces.Services;
 using PricingService.Domain.Primitives;
+using PricingService.Infrastructure.Behaviours;
 using PricingService.Infrastructure.Data;
-using PricingService.Infrastructure.Data.Repositories;
 using PricingService.Infrastructure.DependencyInjection;
 using PricingService.Infrastructure.DomainEvents;
 using PricingService.Infrastructure.Messaging.Consumers;
 using PricingService.Infrastructure.Messaging.IntegrationEvents;
+using PricingService.Infrastructure.Observability;
 using PricingService.Infrastructure.Services;
 using PricingService.Infrastructure.Services.Grpc.Clients;
 using RabbitMQ.Client;
@@ -38,16 +45,15 @@ public static class InfrastructureExtensions
             .AddGrpc(configuration)
             .AddCircuitBreaker()
             .AddMassTransit(configuration)
-            .AddIntegrationEventHandlers();
+            .AddIntegrationEventHandlers()
+            .AddObservability(configuration)
+            .AddBehaviours();
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<ICurrencyService, CurrencyServiceClient>();
         services.AddScoped<IExchangeRateService, ExchangeRateService>();
         services.AddScoped<IMoneyConverter, MoneyConverter>();
-
-        services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
-        services.AddScoped<IPriceReadRepository, PriceReadRepository>();
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
@@ -61,7 +67,7 @@ public static class InfrastructureExtensions
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sqlOptions =>
             {                 
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", Schemas.Prices);
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", Schemas.PricesWrite);
             }));
 
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
@@ -183,7 +189,7 @@ public static class InfrastructureExtensions
                     h.Password("guest");
                 });
 
-                cfg.ConfigureEndpoints(context);
+                cfg.ConfigureEndpoints(context, new KebabCaseEndpointNameFormatter("pricing-service", false));
             });     
         });
 
@@ -199,6 +205,48 @@ public static class InfrastructureExtensions
             .AddClasses(classes => classes.AssignableTo(typeof(IPreCommitDomainEventHandler<>)))
             .AsImplementedInterfaces()
             .WithScopedLifetime());
+
+        return services;
+    }
+
+    private static IServiceCollection AddObservability(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var otlpEndpoint = configuration.GetConnectionString("OtlpEndpoint")
+            ?? throw new InvalidOperationException("OtlpEndpoint is not configured");
+
+        services.AddOpenTelemetry()
+            .WithTracing(tracing => tracing
+                .SetResourceBuilder(ResourceBuilder
+                    .CreateDefault()
+                    .AddService("PricingService"))
+                .AddAspNetCoreInstrumentation(opts =>
+                    opts.Filter = ctx =>
+                        !ctx.Request.Path.StartsWithSegments("/health"))
+                .AddHttpClientInstrumentation()
+                .AddSource("MassTransit")
+                .AddSource("PricingService")
+                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)))
+            .WithMetrics(metrics => metrics
+                .SetResourceBuilder(ResourceBuilder
+                    .CreateDefault()
+                    .AddService("PricingService"))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddRuntimeInstrumentation()
+                .AddMeter(PricingServiceMetrics.MeterName)
+                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)));
+
+        services.AddSingleton<IPricingMetrics, PricingServiceMetrics>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddBehaviours(this IServiceCollection services)
+    {
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>));
 
         return services;
     }

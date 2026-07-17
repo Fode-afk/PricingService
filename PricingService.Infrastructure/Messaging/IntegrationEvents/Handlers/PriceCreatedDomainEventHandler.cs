@@ -9,7 +9,7 @@ public sealed class PriceCreatedDomainEventHandler(IPublishEndpoint publish) : I
 {
     public async Task Handle(PriceCreatedDomainEvent notification, CancellationToken cancellationToken) =>
         await publish.Publish(new PriceCreatedIntegrationEvent(
-            notification.Price.ProductId,
-            notification.VendorId,
-            notification.Price.CurrentPrice.Amount), cancellationToken);
+            notification.ProductVariantId,
+            notification.HasActivePrice,
+            notification.Version), cancellationToken);
 }

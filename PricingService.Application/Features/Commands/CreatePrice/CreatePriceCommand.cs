@@ -4,7 +4,8 @@ using migApp.Shared.Results;
 namespace PricingService.Application.Features.Commands.CreatePrice;
 
 public sealed record CreatePriceCommand(
-    Guid ProductId,
+    Guid ProductVariantId,
     Guid VendorId, 
     long BasePriceMinor,
-    string Currency) : IRequest<IResult>;
+    string Currency,
+    DateTimeOffset? EffectiveFrom) : IRequest<IResult>;

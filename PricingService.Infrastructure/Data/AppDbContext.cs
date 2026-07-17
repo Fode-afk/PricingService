@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PricingService.Application.Interfaces.Data;
 using PricingService.Domain.Models;
 using PricingService.Domain.Primitives;
+using PricingService.Domain.Snapshots;
 using PricingService.Infrastructure.DomainEvents;
 
 namespace PricingService.Infrastructure.Data;
@@ -13,15 +14,16 @@ internal sealed class AppDbContext(
     IDomainEventsDispatcher domainEventsDispatcher) : DbContext(options), IAppDbContext
 {
     public DbSet<Price> Prices { get; set; }
-    public DbSet<PriceReadModel> PriceReadModels { get; set; }
 
     public DbSet<ProductSnapshot> ProductSnapshots { get; set; }
+    public DbSet<ProductVariantSnapshot> ProductVariantSnapshots { get; set; }
+    public DbSet<VendorSnapshot> VendorSnapshots { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.HasDefaultSchema(Schemas.Prices);
+        modelBuilder.HasDefaultSchema(Schemas.PricesWrite);
 
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
