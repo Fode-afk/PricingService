@@ -4,5 +4,5 @@ namespace PricingService.Application.Features.IntegrationEventHandlers.ProductSn
 
 public sealed record UpdateProductSnapshotCommand(
     Guid ProductId,
-    bool CanBeModified,
+    bool CanEditOperationalData,
     long Version) : IRequest;

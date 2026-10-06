@@ -28,7 +28,7 @@ public sealed class UpdateProductSnapshotCommandHandler(
             return;
         }
 
-        snapshot.CanBeModified = request.CanBeModified;
+        snapshot.CanEditOperationalData = request.CanEditOperationalData;
         snapshot.UpdatedAt = timeProvider.GetUtcNow();
         snapshot.Version = request.Version;
 

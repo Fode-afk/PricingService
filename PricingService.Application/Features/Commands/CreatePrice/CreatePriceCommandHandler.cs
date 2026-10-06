@@ -56,7 +56,7 @@ public sealed class CreatePriceCommandHandler(
 
         var ctx = new PriceCreationContext(
             vendorSnapshot.IsActive,
-            productSnapshot.CanBeModified);
+            productSnapshot.CanEditOperationalData);
 
         var result = Price.Create(
             ctx,

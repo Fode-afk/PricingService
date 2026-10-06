@@ -8,5 +8,5 @@ public static class PriceCreationSpecification
 {
     public static readonly ISpecification<PriceCreationContext> Spec =
         new VendorIsActiveSpec<PriceCreationContext>()
-            .And(new ProductCanBeModifiedSpec<PriceCreationContext>());
+            .And(new ProductCanEditOperationalDataSpec<PriceCreationContext>());
 }

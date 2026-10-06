@@ -5,9 +5,9 @@ using PricingService.Application.Features.IntegrationEventHandlers.ProductSnapsh
 
 namespace PricingService.Infrastructure.Messaging.Consumers.Product;
 
-public sealed class ProductArchivedIntegrationEventConsumer(IMediator mediator) : IConsumer<ProductArchivedIntegrationEvent>
+public sealed class ProductUnsuspendedIntegrationEventConsumer(IMediator mediator) : IConsumer<ProductUnsuspendedIntegrationEvent>
 {
-    public async Task Consume(ConsumeContext<ProductArchivedIntegrationEvent> context) =>
+    public async Task Consume(ConsumeContext<ProductUnsuspendedIntegrationEvent> context) =>
         await mediator.Send(new UpdateProductSnapshotCommand(
             context.Message.ProductId,
             context.Message.CanEditOperationalData,

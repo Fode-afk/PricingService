@@ -21,7 +21,7 @@ public sealed class AddProductSnapshotCommandHandler(
             {
                 ProductId = request.ProductId,
                 VendorId = request.VendorId,
-                CanBeModified = request.CanBeModified,
+                CanEditOperationalData = request.CanEditOperationalData,
                 UpdatedAt = timeProvider.GetUtcNow(),
                 Version = request.Version
             });

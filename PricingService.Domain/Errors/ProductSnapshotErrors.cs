@@ -8,9 +8,9 @@ public static class ProductSnapshotErrors
         Error.NotFound(ProductSnapshotErrorCodes.NotFound,
             "ProductSnapshot not found.");
 
-    public static Error CannotModify() =>
-        Error.InvalidArgument(ProductSnapshotErrorCodes.CannotModify,
-            "Cannot modify ProductSnapshot.");
+    public static Error CannotEditOperationalData() =>
+        Error.InvalidArgument(ProductSnapshotErrorCodes.CannotEditOperationalData,
+            "Cannot edit operational data for ProductSnapshot.");
 
     public static Error DoesNotBelongToVendor() =>
         Error.InvalidArgument(ProductSnapshotErrorCodes.DoesNotBelongToVendor,
@@ -24,7 +24,7 @@ public static class ProductSnapshotErrors
 public static class ProductSnapshotErrorCodes
 {
     public const string NotFound = "ProductSnapshot.NotFound";
-    public const string CannotModify = "ProductSnapshot.CannotModify";
+    public const string CannotEditOperationalData = "ProductSnapshot.CannotEditOperationalData";
     public const string DoesNotBelongToVendor = "ProductSnapshot.DoesNotBelongToVendor";
     public const string AlreadyExists = "ProductSnapshot.AlreadyExists";
 }

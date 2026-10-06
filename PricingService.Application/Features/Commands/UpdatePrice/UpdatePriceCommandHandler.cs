@@ -59,7 +59,7 @@ public sealed class UpdatePriceCommandHandler(
         if (newPriceInUsdResult.IsFailure)
             return newPriceInUsdResult;
 
-        var ctx = new UpdatePriceContext(vendorSnapshot.IsActive, productSnapshot.CanBeModified);
+        var ctx = new UpdatePriceContext(vendorSnapshot.IsActive, productSnapshot.CanEditOperationalData);
 
         var result = price.UpdatePrice(
             ctx,

@@ -11,6 +11,6 @@ public sealed class ProductCreatedIntegrationEventConsumer(IMediator mediator) :
         await mediator.Send(new AddProductSnapshotCommand(
             context.Message.ProductId,
             context.Message.VendorId,
-            context.Message.CanBeModified,
+            context.Message.CanEditOperationalData,
             context.Message.Version), context.CancellationToken);
 }
