@@ -1,8 +1,8 @@
-﻿using PricingService.Domain.Primitives;
+﻿using migApp.Shared.Domain.Primitives;
 
 namespace PricingService.Infrastructure.DomainEvents;
 
-public interface IDomainEventsDispatcher
+internal interface IDomainEventsDispatcher
 {
     Task DispatchPreCommitDomainEventsAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default);
     Task DispatchPostCommitDomainEventsAsync(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default);

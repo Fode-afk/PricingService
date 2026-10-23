@@ -11,10 +11,11 @@ internal sealed class ProductVariantSnapshotConfiguration : IEntityTypeConfigura
         builder.ToTable("ProductVariantSnapshots", Schemas.PricesWrite);
 
         builder.HasKey(x => x.ProductVariantId);
+
         builder.HasIndex(x => x.ProductId);
 
         builder.Property<byte[]>("RowVersion")
-           .IsRowVersion()
-           .IsConcurrencyToken();
+            .IsRowVersion()
+            .IsConcurrencyToken();
     }
 }

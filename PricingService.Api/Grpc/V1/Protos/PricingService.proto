@@ -1,6 +1,5 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 package pricing.v1;
@@ -8,11 +7,11 @@ package pricing.v1;
 option csharp_namespace = "PricingService.Api.Grpc.V1.Protos";
 
 service PricingService {
-	rpc CreatePrice(CreatePriceRequest) returns (google.protobuf.Empty);
-    rpc UpdatePrice(UpdatePriceRequest) returns (google.protobuf.Empty);
+	rpc CreatePrice(CreatePriceRequest) returns (PriceStateResponse);
+    rpc UpdatePrice(UpdatePriceRequest) returns (PriceStateResponse);
 
     rpc GetPriceHistory(GetPriceHistoryRequest) returns (GetPriceHistoryResponse);
-    rpc GetScheduledPrice(GetScheduledPriceRequest) returns (GetScheduledPriceResponse);
+    rpc GetNextScheduledPrice(GetNextScheduledPriceRequest) returns (GetNextScheduledPriceResponse);
 }
 
 message CreatePriceRequest {
@@ -20,16 +19,15 @@ message CreatePriceRequest {
     string vendor_id = 2; 
     int64 base_price_minor = 3;
     string currency_code = 4;
-    google.protobuf.Timestamp effective_from = 5;
 }
 
 message UpdatePriceRequest {
-    string vendor_id = 1;
-    string product_variant_id = 2;
+    string product_variant_id = 1;
+    string vendor_id = 2;
     int64 new_price_minor = 3;
     string currency_code = 4;
-    google.protobuf.Timestamp effective_from = 5;
-    google.protobuf.Timestamp effective_to = 6;
+    optional string effective_from = 5;
+    optional string effective_to = 6;
 }
 
 message PriceHistoryEntryDto {
@@ -43,8 +41,8 @@ message PriceHistoryEntryDto {
 message GetPriceHistoryRequest {
     string product_variant_id = 1;
     string vendor_id = 2;
-    google.protobuf.Timestamp from = 3;
-    google.protobuf.Timestamp to = 4;
+    optional string from = 3;
+    optional string to = 4;
     int32 page = 5;
     int32 page_size = 6;
     string currency_code = 7;
@@ -58,19 +56,25 @@ message GetPriceHistoryResponse {
     int32 total_pages = 5;
 }
 
-message ScheduledPriceDto {
-    int64 price_minor = 1;
-    google.protobuf.Timestamp effective_from = 3;
-    google.protobuf.Timestamp effective_to = 4;
-}
-
-message GetScheduledPriceRequest {
+message GetNextScheduledPriceRequest {
     string product_variant_id = 1;
     string vendor_id = 2;
     google.protobuf.Timestamp at = 3;
     string currency_code = 4;
 }
 
-message GetScheduledPriceResponse {
-    ScheduledPriceDto scheduled_price = 1;
+message GetNextScheduledPriceResponse {
+    PriceEntryDto scheduled_price = 1;
+}
+
+message PriceEntryDto {
+    int64 price_minor = 1;
+    string currency_code = 2;
+    google.protobuf.Timestamp effective_from = 3;
+    google.protobuf.Timestamp effective_to = 4;
+}
+
+message PriceStateResponse {
+    PriceEntryDto current = 1;
+    PriceEntryDto next_scheduled = 2;
 }

@@ -1,8 +1,9 @@
-﻿using PricingService.Domain.Primitives;
+﻿using migApp.Shared.Domain.Primitives;
+using migApp.Shared.Domain.ValueObjects;
 
 namespace PricingService.Domain.DomainEvents;
 
 public sealed record PriceCreatedDomainEvent(
     Guid ProductVariantId,
-    bool HasActivePrice,
+    Money CurrentPrice,
     long Version) : IDomainEvent;

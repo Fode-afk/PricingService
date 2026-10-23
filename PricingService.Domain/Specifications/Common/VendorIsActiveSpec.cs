@@ -6,7 +6,7 @@ using static migApp.Shared.Results.ResultFactory;
 
 namespace PricingService.Domain.Specifications.Common;
 
-public sealed class VendorIsActiveSpec<T> : Specification<T>
+internal sealed class VendorIsActiveSpec<T> : Specification<T>
     where T : IVendorContext
 {
     public override IResult IsSatisfiedBy(T ctx)

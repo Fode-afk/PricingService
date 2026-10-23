@@ -1,7 +1,7 @@
 ﻿using MassTransit;
+using migApp.Shared.Domain.Primitives;
 using migApp.Shared.Messaging.IntegrationEvents.Pricing;
 using PricingService.Domain.DomainEvents;
-using PricingService.Domain.Primitives;
 
 namespace PricingService.Infrastructure.Messaging.IntegrationEvents.Handlers;
 

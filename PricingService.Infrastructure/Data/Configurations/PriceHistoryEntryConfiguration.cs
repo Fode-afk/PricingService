@@ -12,12 +12,21 @@ public sealed class PriceHistoryEntryConfiguration : IEntityTypeConfiguration<Pr
         builder.ToTable("PriceHistoryEntries", Schemas.PricesWrite);
 
         builder.HasKey(h => h.Id);
+        builder.Property(h => h.Id).ValueGeneratedNever();
 
-        builder.Property(e => e.Amount)
-            .HasPrecision(18, 4)
-            .HasConversion(
-                amount => amount.Amount,
-                value => Money.Create(value, Currency.USD).Value);
+        builder.ComplexProperty(e => e.Amount, money =>
+        {
+            money.Property(m => m.Amount)
+                .HasColumnName("Amount")
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            money.Property(p => p.Currency)
+              .HasMaxLength(Currency.CodeLength)
+              .HasConversion(
+                  currency => currency.Code,
+                  value => Currency.Create(value).Value);
+        });
 
         builder.Property(h => h.ReasonNote)
             .HasMaxLength(500);
@@ -25,6 +34,8 @@ public sealed class PriceHistoryEntryConfiguration : IEntityTypeConfiguration<Pr
         builder.Property(h => h.Source)
             .HasMaxLength(100)
             .IsRequired();
+
+        builder.Property(h => h.CreatedAt).IsRequired();
 
         builder.HasIndex(h => h.PriceId);
 

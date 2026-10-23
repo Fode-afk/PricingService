@@ -1,9 +1,9 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using migApp.Shared.Domain.Errors;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Application.Interfaces.Data;
-using PricingService.Application.Interfaces.Services;
 using PricingService.Domain.Context;
 using PricingService.Domain.Enums;
 using PricingService.Domain.Errors;
@@ -13,7 +13,6 @@ namespace PricingService.Application.Features.Commands.UpdatePrice;
 
 public sealed class UpdatePriceCommandHandler(
     IAppDbContext context,
-    IMoneyConverter moneyConverter,
     TimeProvider timeProvider) : IRequestHandler<UpdatePriceCommand, IResult>
 {
     public async Task<IResult> Handle(UpdatePriceCommand request, CancellationToken cancellationToken)
@@ -40,6 +39,8 @@ public sealed class UpdatePriceCommandHandler(
             return Fail(ProductSnapshotErrors.DoesNotBelongToVendor());
 
         var price = await context.Prices
+            .Include(p => p.Entries)
+            .Include(p => p.History)
             .FirstOrDefaultAsync(p => p.ProductVariantId == request.ProductVariantId, cancellationToken);
         if (price is null)
             return Fail(PriceErrors.NotFound());
@@ -52,18 +53,11 @@ public sealed class UpdatePriceCommandHandler(
         if (newPriceResult.IsFailure)
             return newPriceResult;
 
-        var newPriceInUsdResult = await moneyConverter.ConvertAsync(
-            newPriceResult.Value,
-            Currency.USD,
-            cancellationToken);
-        if (newPriceInUsdResult.IsFailure)
-            return newPriceInUsdResult;
-
         var ctx = new UpdatePriceContext(vendorSnapshot.IsActive, productSnapshot.CanEditOperationalData);
 
         var result = price.UpdatePrice(
             ctx,
-            newPriceInUsdResult.Value, 
+            newPriceResult.Value, 
             request.VendorId,
             PriceChangeReason.ManualUpdate,
             $"vendor:{request.VendorId}",

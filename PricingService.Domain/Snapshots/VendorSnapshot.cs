@@ -2,7 +2,7 @@
 
 public sealed class VendorSnapshot
 {
-    public Guid VendorId { get; set; }
+    public Guid VendorId { get; init; }
     public DateTimeOffset UpdatedAt { get; set; }
     public bool IsActive { get; set; }
     public long Version { get; set; }

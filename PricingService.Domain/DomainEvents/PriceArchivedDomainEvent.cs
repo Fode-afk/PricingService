@@ -1,4 +1,4 @@
-﻿using PricingService.Domain.Primitives;
+﻿using migApp.Shared.Domain.Primitives;
 
 namespace PricingService.Domain.DomainEvents;
 

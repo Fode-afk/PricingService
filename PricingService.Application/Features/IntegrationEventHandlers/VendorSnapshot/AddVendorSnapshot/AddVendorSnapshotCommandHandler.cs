@@ -12,6 +12,7 @@ public sealed class AddVendorSnapshotCommandHandler(
     {
         var exists = await context.VendorSnapshots
             .AnyAsync(x => x.VendorId == request.VendorId, cancellationToken);
+
         if (exists)
             return;
 

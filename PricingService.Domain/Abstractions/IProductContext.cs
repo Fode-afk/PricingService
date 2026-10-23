@@ -1,6 +1,6 @@
 ﻿namespace PricingService.Domain.Abstractions;
 
-public interface IProductContext
+internal interface IProductContext
 {
     bool ProductCanEditOperationalData { get; }
 }

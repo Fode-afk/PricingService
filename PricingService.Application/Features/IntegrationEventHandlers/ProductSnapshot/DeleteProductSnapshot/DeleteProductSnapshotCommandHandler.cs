@@ -10,6 +10,7 @@ public sealed class DeleteProductSnapshotCommandHandler(IAppDbContext context) :
     {
         var snapshot = await context.ProductSnapshots
             .FirstOrDefaultAsync(p => p.ProductId == request.ProductId, cancellationToken);
+
         if (snapshot is null)
             return;
 

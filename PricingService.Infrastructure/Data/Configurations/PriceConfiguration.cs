@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using migApp.Shared.Domain.ValueObjects;
 using PricingService.Domain.Models;
 
 namespace PricingService.Infrastructure.Data.Configurations;
@@ -14,6 +15,14 @@ internal sealed class PriceConfiguration : IEntityTypeConfiguration<Price>
 
         builder.HasIndex(x => x.ProductVariantId).IsUnique();
         builder.HasIndex(x => x.VendorId);
+
+        builder.Property(p => p.Currency)
+            .HasMaxLength(Currency.CodeLength)
+            .HasConversion(
+                currency => currency.Code,
+                value => Currency.Create(value).Value);
+
+        builder.Property(p => p.CreatedAt).IsRequired();
 
         builder.HasMany(p => p.Entries)
             .WithOne()

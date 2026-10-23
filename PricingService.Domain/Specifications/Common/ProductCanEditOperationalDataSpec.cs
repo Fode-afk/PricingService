@@ -6,7 +6,7 @@ using static migApp.Shared.Results.ResultFactory;
 
 namespace PricingService.Domain.Specifications.Common;
 
-public sealed class ProductCanEditOperationalDataSpec<T> : Specification<T>
+internal sealed class ProductCanEditOperationalDataSpec<T> : Specification<T>
     where T : IProductContext
 {
     public override IResult IsSatisfiedBy(T ctx)

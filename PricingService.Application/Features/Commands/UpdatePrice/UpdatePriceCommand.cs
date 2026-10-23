@@ -4,9 +4,9 @@ using migApp.Shared.Results;
 namespace PricingService.Application.Features.Commands.UpdatePrice;
 
 public sealed record UpdatePriceCommand(
-    Guid VendorId,
     Guid ProductVariantId,
+    Guid VendorId,
     long NewPriceMinor,
     string Currency,
-    DateTimeOffset? EffectiveFrom = null,
-    DateTimeOffset? EffectiveTo = null) : IRequest<IResult>;
+    DateTimeOffset? EffectiveFrom,
+    DateTimeOffset? EffectiveTo) : IRequest<IResult>;

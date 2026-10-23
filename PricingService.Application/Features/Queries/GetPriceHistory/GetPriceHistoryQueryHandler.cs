@@ -1,18 +1,20 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Application.Dtos;
 using PricingService.Application.Interfaces.Data;
 using PricingService.Application.Interfaces.Services;
-using PricingService.Domain.Errors;
+using PricingService.Application.Mapping;
 using static migApp.Shared.Results.ResultFactory;
 
 namespace PricingService.Application.Features.Queries.GetPriceHistory;
 
 public sealed class GetPriceHistoryQueryHandler(
     IAppDbContext context,
-    IMoneyConverter moneyConverter) : IRequestHandler<GetPriceHistoryQuery, IResult<PagedResult<PriceHistoryEntryDto>>>
+    IExchangeRateService exchangeRateService,
+    ILogger<GetPriceHistoryQueryHandler> logger) : IRequestHandler<GetPriceHistoryQuery, IResult<PagedResult<PriceHistoryEntryDto>>>
 {
     public async Task<IResult<PagedResult<PriceHistoryEntryDto>>> Handle(GetPriceHistoryQuery request, CancellationToken cancellationToken)
     {
@@ -42,53 +44,44 @@ public sealed class GetPriceHistoryQueryHandler(
             .ToListAsync(cancellationToken);
 
         if (entries.Count == 0 && total == 0)
-            return Fail<PagedResult<PriceHistoryEntryDto>>(PriceErrors.NotFound());
+            return Ok(
+                new PagedResult<PriceHistoryEntryDto>(
+                    [],
+                    total,
+                    request.Page,
+                    request.PageSize));
 
-        var dtos = new List<PriceHistoryEntryDto>(entries.Count);
+        var source = entries.Select(e => e.Amount.Currency).First();
+        var rate = 1m;
+        var displayCurrency = source;
 
-        foreach (var e in entries)
+        if (targetCurrency != source)
         {
-            var amountResult = await ConvertUsdToTargetMinorAsync(e.Amount, targetCurrency, cancellationToken);
+            var fetched = await exchangeRateService.GetExchangeRateAsync(
+                source,
+                targetCurrency, cancellationToken);
 
-            if (amountResult.IsFailure)
-                return Fail<PagedResult<PriceHistoryEntryDto>>(amountResult.Error);
-
-            dtos.Add(new PriceHistoryEntryDto(
-                amountResult.Value,
-                e.Reason.ToString(),
-                e.ReasonNote,
-                e.ChangedBy,
-                e.Source,
-                e.CreatedAt));
+            if (fetched is null)
+            {
+                logger.LogWarning(
+                    "Exchange rate {Source}→{Target} unavailable, returning price history in {Source} for vendor {VendorId}",
+                    source,
+                    targetCurrency,
+                    source,
+                    request.VendorId);
+            }
+            else
+            {
+                rate = fetched.Value;
+                displayCurrency = targetCurrency;
+            }
         }
 
-        return Ok(new PagedResult<PriceHistoryEntryDto>(dtos, total, request.Page, request.PageSize));
-    }
-
-    private async Task<IResult<long>> ConvertUsdToTargetMinorAsync(
-        Money usdAmount,
-        Currency targetCurrency,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (targetCurrency != Currency.USD)
-        {
-            var converted = await moneyConverter.ConvertAsync(
-                usdAmount,
-                targetCurrency,
-                cancellationToken);
-
-            if (converted.IsFailure)
-                return Fail<long>(converted.Error);
-
-            usdAmount = converted.Value;
-        }
-
-        var minorResult = Money.ToMinor(usdAmount.Amount, targetCurrency);
-
-        return minorResult.IsFailure
-            ? Fail<long>(minorResult.Error)
-            : Ok(minorResult.Value);
+        return Ok(
+            new PagedResult<PriceHistoryEntryDto>(
+                entries.ToDtos(rate, displayCurrency),
+                total, 
+                request.Page, 
+                request.PageSize));
     }
 }

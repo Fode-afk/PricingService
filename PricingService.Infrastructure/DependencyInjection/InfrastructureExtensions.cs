@@ -6,10 +6,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using migApp.Shared.Behaviours;
 using migApp.Shared.Caching;
+using migApp.Shared.Domain.Primitives;
 using migApp.Shared.Grpc;
 using migApp.Shared.Utils;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -17,11 +21,10 @@ using Polly;
 using PricingService.Application.Interfaces.Data;
 using PricingService.Application.Interfaces.Metrics;
 using PricingService.Application.Interfaces.Services;
-using PricingService.Domain.Primitives;
 using PricingService.Infrastructure.Behaviours;
 using PricingService.Infrastructure.Data;
-using PricingService.Infrastructure.DependencyInjection;
 using PricingService.Infrastructure.DomainEvents;
+using PricingService.Infrastructure.Messaging;
 using PricingService.Infrastructure.Messaging.Consumers;
 using PricingService.Infrastructure.Messaging.IntegrationEvents;
 using PricingService.Infrastructure.Observability;
@@ -29,7 +32,6 @@ using PricingService.Infrastructure.Services;
 using PricingService.Infrastructure.Services.Grpc.Clients;
 using RabbitMQ.Client;
 using ZiggyCreatures.Caching.Fusion;
-using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
 using Protos = CurrencyService.Api.Grpc.V1.Protos;
 
 namespace PricingService.Infrastructure.DependencyInjection;
@@ -41,10 +43,10 @@ public static class InfrastructureExtensions
             .AddServices()
             .AddDatabase(configuration)
             .AddCache(configuration)
-            .AddHealthChecks(configuration)
-            .AddGrpc(configuration)
+            .AddHealth(configuration)
+            .AddGrpcServices(configuration)
             .AddCircuitBreaker()
-            .AddMassTransit(configuration)
+            .AddMessaging()
             .AddIntegrationEventHandlers()
             .AddObservability(configuration)
             .AddBehaviours();
@@ -53,7 +55,6 @@ public static class InfrastructureExtensions
     {
         services.AddScoped<ICurrencyService, CurrencyServiceClient>();
         services.AddScoped<IExchangeRateService, ExchangeRateService>();
-        services.AddScoped<IMoneyConverter, MoneyConverter>();
 
         services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
@@ -62,7 +63,8 @@ public static class InfrastructureExtensions
 
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        string? connectionString = configuration.GetConnectionString("Database");
+        string connectionString = configuration.GetConnectionString("Database")
+            ?? throw new InvalidOperationException("Connection string 'Database' is missing");
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sqlOptions =>
@@ -106,55 +108,71 @@ public static class InfrastructureExtensions
                     FactoryHardTimeout = TimeSpan.FromSeconds(3)
                 };
             })
-            .WithDistributedCache(sp =>
-                sp.GetRequiredService<IDistributedCache>())
-            .WithBackplane(sp => new RedisBackplane(
-                new RedisBackplaneOptions
-                {
-                    Configuration = redisConnection
-                }))
-            .WithSerializer(new JsonFusionCacheSerializer())
-            .TryWithAutoSetup();
+            .WithDistributedCache(sp => sp.GetRequiredService<IDistributedCache>())
+            .WithStackExchangeRedisBackplane(o => o.Configuration = redisConnection)
+            .WithSerializer(new JsonFusionCacheSerializer());
 
         return services;
     }
 
-    private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddHealth(this IServiceCollection services, IConfiguration configuration)
     {
+        var databaseConnectionString = configuration.GetConnectionString("Database")
+            ?? throw new InvalidOperationException("Connection string 'Database' is missing");
+
+        var rabbitMq = configuration
+            .GetSection(RabbitMqOptions.SectionName)
+            .Get<RabbitMqOptions>()
+                ?? throw new InvalidOperationException("RabbitMQ configuration is missing.");
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+            ?? throw new InvalidOperationException("Connection string 'Redis' is missing");
+
         services.AddGrpcHealthChecks()
             .AddCheck("self", () => HealthCheckResult.Healthy("Service is running"))
             .AddSqlServer(
-                connectionString: configuration.GetConnectionString("Database")!,
+                connectionString: databaseConnectionString,
                 name: "mssql",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["ready"])
             .AddRabbitMQ(
-                factory: sp =>
+                factory: async sp =>
                 {
                     var factory = new ConnectionFactory()
                     {
-                        HostName = configuration["RabbitMQ:Host"]!,
-                        Port = int.Parse(configuration["RabbitMQ:Port"]!)
+                        HostName = rabbitMq.Host,
+                        Port = rabbitMq.Port,
+                        VirtualHost = rabbitMq.VirtualHost,
+                        UserName = rabbitMq.Username,
+                        Password = rabbitMq.Password
                     };
-                    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                    return await factory.CreateConnectionAsync();
                 },
                 name: "rabbitmq",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"])
+            .AddRedis(
+                redisConnectionString: redisConnectionString,
+                name: "redis",
                 failureStatus: HealthStatus.Unhealthy,
                 tags: ["ready"]);
 
         return services;
     }
 
-    private static IServiceCollection AddGrpc(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddGrpcServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddGrpc(options =>
         {
             options.Interceptors.Add<GrpcExceptionInterceptor>();
         });
 
+        string CurrencyServiceConnectionString = configuration.GetConnectionString("CurrencyService")
+            ?? throw new InvalidOperationException("CurrencyService connection string is missing");
+
         services.AddGrpcClient<Protos.CurrencyService.CurrencyServiceClient>(options =>
         {
-            options.Address = new Uri(configuration.GetConnectionString("CurrencyService")!);
+            options.Address = new Uri(CurrencyServiceConnectionString);
         });
 
         return services;
@@ -163,15 +181,30 @@ public static class InfrastructureExtensions
     private static IServiceCollection AddCircuitBreaker(this IServiceCollection services) =>
        services.AddSingleton(sp =>
            CircuitBreakerPolicy.GetCircuitBreakerPolicy(
-               sp.GetRequiredService<ILogger<IAsyncPolicy>>()
-           )
-       );
+               sp.GetRequiredService<ILogger<IAsyncPolicy>>()));
 
-    private static IServiceCollection AddMassTransit(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddMessaging(this IServiceCollection services)
     {
+        services
+           .AddOptions<RabbitMqOptions>()
+           .BindConfiguration(RabbitMqOptions.SectionName)
+           .Validate(
+               options => !string.IsNullOrWhiteSpace(options.Host),
+               "RabbitMQ:Host is required.")
+           .Validate(
+               options => options.Port > 0,
+               "RabbitMQ:Port must be greater than zero.")
+           .Validate(
+               options => !string.IsNullOrWhiteSpace(options.Username),
+               "RabbitMQ:Username is required.")
+           .Validate(
+               options => !string.IsNullOrWhiteSpace(options.Password),
+               "RabbitMQ:Password is required.")
+           .ValidateOnStart();
+
         services.AddMassTransit(x =>
         {
-            x.SetKebabCaseEndpointNameFormatter();
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("pricing-service", false));
 
             x.AddConsumersFromNamespaceContaining<ConsumersAssemblyMarker>();
 
@@ -183,14 +216,21 @@ public static class InfrastructureExtensions
 
             x.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host(configuration["RabbitMQ:Host"]!, "/", h =>
-                {
-                    h.Username("guest");
-                    h.Password("guest");
-                });
+                var options = context
+                    .GetRequiredService<IOptions<RabbitMqOptions>>()
+                    .Value;
 
-                cfg.ConfigureEndpoints(context, new KebabCaseEndpointNameFormatter("pricing-service", false));
-            });     
+                cfg.Host(options.Host,
+                    options.Port,
+                    options.VirtualHost,
+                    host =>
+                    {
+                        host.Username(options.Username);
+                        host.Password(options.Password);
+                    });
+
+                cfg.ConfigureEndpoints(context);
+            });
         });
 
         return services;
@@ -213,30 +253,27 @@ public static class InfrastructureExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var otlpEndpoint = configuration.GetConnectionString("OtlpEndpoint")
+        var otlpEndpoint = configuration["Otlp:Endpoint"]
             ?? throw new InvalidOperationException("OtlpEndpoint is not configured");
 
         services.AddOpenTelemetry()
+            .ConfigureResource(r => r.AddService("PricingService"))
+            .UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri(otlpEndpoint))
             .WithTracing(tracing => tracing
-                .SetResourceBuilder(ResourceBuilder
-                    .CreateDefault()
-                    .AddService("PricingService"))
                 .AddAspNetCoreInstrumentation(opts =>
                     opts.Filter = ctx =>
                         !ctx.Request.Path.StartsWithSegments("/health"))
                 .AddHttpClientInstrumentation()
+                .AddFusionCacheInstrumentation()
                 .AddSource("MassTransit")
-                .AddSource("PricingService")
-                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)))
+                .AddSource("PricingService"))
             .WithMetrics(metrics => metrics
-                .SetResourceBuilder(ResourceBuilder
-                    .CreateDefault()
-                    .AddService("PricingService"))
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
+                .AddFusionCacheInstrumentation()
                 .AddRuntimeInstrumentation()
-                .AddMeter(PricingServiceMetrics.MeterName)
-                .AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint)));
+                .AddMeter("MassTransit")
+                .AddMeter(PricingServiceMetrics.MeterName));
 
         services.AddSingleton<IPricingMetrics, PricingServiceMetrics>();
 
@@ -245,8 +282,8 @@ public static class InfrastructureExtensions
 
     private static IServiceCollection AddBehaviours(this IServiceCollection services)
     {
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         return services;
     }

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using PricingService.Domain.Primitives;
+using migApp.Shared.Domain.Primitives;
 
 namespace PricingService.Infrastructure.DomainEvents;
 

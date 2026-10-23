@@ -7,5 +7,4 @@ public sealed record CreatePriceCommand(
     Guid ProductVariantId,
     Guid VendorId, 
     long BasePriceMinor,
-    string Currency,
-    DateTimeOffset? EffectiveFrom) : IRequest<IResult>;
+    string Currency) : IRequest<IResult>;

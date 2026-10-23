@@ -1,7 +1,7 @@
-﻿using migApp.Shared.Domain.ValueObjects;
+﻿using migApp.Shared.Domain.Primitives;
+using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Domain.Errors;
-using PricingService.Domain.Primitives;
 using static migApp.Shared.Results.ResultFactory;
 
 namespace PricingService.Domain.Models;
@@ -23,11 +23,11 @@ public sealed class PriceEntry : Entity
         EffectiveTo = effectiveTo;
     }
 
-    public Guid PriceId { get; private set; }
+    public Guid PriceId { get; }
 
-    public Money Amount { get; private set; }
+    public Money Amount { get; }
 
-    public DateTimeOffset EffectiveFrom { get; private set; }
+    public DateTimeOffset EffectiveFrom { get; }
     public DateTimeOffset? EffectiveTo { get; private set; }
     public bool IsScheduled(DateTimeOffset now) => EffectiveFrom > now;
 

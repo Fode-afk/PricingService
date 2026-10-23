@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Application.Interfaces.Data;
-using PricingService.Application.Interfaces.Services;
 using PricingService.Domain.Context;
 using PricingService.Domain.Errors;
 using PricingService.Domain.Models;
@@ -13,7 +12,6 @@ namespace PricingService.Application.Features.Commands.CreatePrice;
 
 public sealed class CreatePriceCommandHandler(
     IAppDbContext context,
-    IMoneyConverter moneyConverter,
     TimeProvider timeProvider) : IRequestHandler<CreatePriceCommand, IResult>
 {
     public async Task<IResult> Handle(CreatePriceCommand request, CancellationToken cancellationToken)
@@ -47,13 +45,6 @@ public sealed class CreatePriceCommandHandler(
         if (basePriceResult.IsFailure)
             return basePriceResult;
 
-        var basePriceInUsdResult = await moneyConverter.ConvertAsync(
-            basePriceResult.Value,
-            Currency.USD,
-            cancellationToken);
-        if (basePriceInUsdResult.IsFailure)
-            return basePriceInUsdResult;
-
         var ctx = new PriceCreationContext(
             vendorSnapshot.IsActive,
             productSnapshot.CanEditOperationalData);
@@ -62,16 +53,22 @@ public sealed class CreatePriceCommandHandler(
             ctx,
             request.ProductVariantId,
             request.VendorId,
-            basePriceInUsdResult.Value,
+            basePriceResult.Value,
             createdBy: request.VendorId,
-            timeProvider.GetUtcNow(),
-            request.EffectiveFrom);
+            timeProvider.GetUtcNow());
         if (result.IsFailure)
             return result;
 
         context.Prices.Add(result.Value);
 
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return Fail(PriceErrors.AlreadyExists());
+        }
 
         return Ok();
     }

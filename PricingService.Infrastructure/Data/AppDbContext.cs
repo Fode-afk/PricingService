@@ -1,9 +1,9 @@
 ﻿using MassTransit;
 using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.EntityFrameworkCore;
+using migApp.Shared.Domain.Primitives;
 using PricingService.Application.Interfaces.Data;
 using PricingService.Domain.Models;
-using PricingService.Domain.Primitives;
 using PricingService.Domain.Snapshots;
 using PricingService.Infrastructure.DomainEvents;
 

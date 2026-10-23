@@ -1,6 +1,6 @@
-﻿using migApp.Shared.Domain.ValueObjects;
+﻿using migApp.Shared.Domain.Primitives;
+using migApp.Shared.Domain.ValueObjects;
 using PricingService.Domain.Enums;
-using PricingService.Domain.Primitives;
 
 namespace PricingService.Domain.Models;
 
@@ -27,7 +27,7 @@ public sealed class PriceHistoryEntry : Entity
         CreatedAt = createdAt;
     }
 
-    public Guid PriceId { get; private set; }
+    public Guid PriceId { get; }
 
     public Money Amount { get; }
 
