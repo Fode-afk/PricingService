@@ -1,20 +1,15 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Application.Dtos;
 using PricingService.Application.Interfaces.Data;
-using PricingService.Application.Interfaces.Services;
 using PricingService.Application.Mapping;
 using static migApp.Shared.Results.ResultFactory;
 
 namespace PricingService.Application.Features.Queries.GetPriceHistory;
 
-public sealed class GetPriceHistoryQueryHandler(
-    IAppDbContext context,
-    IExchangeRateService exchangeRateService,
-    ILogger<GetPriceHistoryQueryHandler> logger) : IRequestHandler<GetPriceHistoryQuery, IResult<PagedResult<PriceHistoryEntryDto>>>
+public sealed class GetPriceHistoryQueryHandler(IAppDbContext context) : IRequestHandler<GetPriceHistoryQuery, IResult<PagedResult<PriceHistoryEntryDto>>>
 {
     public async Task<IResult<PagedResult<PriceHistoryEntryDto>>> Handle(GetPriceHistoryQuery request, CancellationToken cancellationToken)
     {
@@ -26,7 +21,10 @@ public sealed class GetPriceHistoryQueryHandler(
 
         var query = context.Prices
             .AsNoTracking()
-            .Where(p => p.ProductVariantId == request.ProductVariantId && p.VendorId == request.VendorId)
+            .Where(p => 
+                p.VendorId == request.VendorId &&
+                p.ProductVariantId == request.ProductVariantId &&
+                p.Currency == targetCurrency)
             .SelectMany(p => p.History);
 
         if (request.From is not null)
@@ -51,35 +49,9 @@ public sealed class GetPriceHistoryQueryHandler(
                     request.Page,
                     request.PageSize));
 
-        var source = entries.Select(e => e.Amount.Currency).First();
-        var rate = 1m;
-        var displayCurrency = source;
-
-        if (targetCurrency != source)
-        {
-            var fetched = await exchangeRateService.GetExchangeRateAsync(
-                source,
-                targetCurrency, cancellationToken);
-
-            if (fetched is null)
-            {
-                logger.LogWarning(
-                    "Exchange rate {Source}→{Target} unavailable, returning price history in {Source} for vendor {VendorId}",
-                    source,
-                    targetCurrency,
-                    source,
-                    request.VendorId);
-            }
-            else
-            {
-                rate = fetched.Value;
-                displayCurrency = targetCurrency;
-            }
-        }
-
         return Ok(
             new PagedResult<PriceHistoryEntryDto>(
-                entries.ToDtos(rate, displayCurrency),
+                entries.ToDtos(),
                 total, 
                 request.Page, 
                 request.PageSize));

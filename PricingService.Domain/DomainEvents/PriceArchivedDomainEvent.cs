@@ -2,4 +2,4 @@
 
 namespace PricingService.Domain.DomainEvents;
 
-public sealed record PriceArchivedDomainEvent(Guid ProductVariantId) : IDomainEvent;
+public sealed record PriceArchivedDomainEvent(Guid PriceId) : IDomainEvent;

@@ -3,8 +3,5 @@
 public enum PriceChangeReason
 {
     Initial,
-    ManualUpdate,
-    BulkImport, 
-    PriceRule,
-    ScheduledEntry
+    ManualUpdate
 }

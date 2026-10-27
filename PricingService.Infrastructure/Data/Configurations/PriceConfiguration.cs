@@ -13,8 +13,14 @@ internal sealed class PriceConfiguration : IEntityTypeConfiguration<Price>
 
         builder.HasKey(x => x.Id);
 
-        builder.HasIndex(x => x.ProductVariantId).IsUnique();
+        builder.HasIndex(x => x.ProductVariantId);
         builder.HasIndex(x => x.VendorId);
+
+        builder.HasIndex(x =>
+            new { x.ProductVariantId, x.VendorId, x.Currency })
+            .IsUnique();
+
+        builder.Property(p => p.IsBase).IsRequired();
 
         builder.Property(p => p.Currency)
             .HasMaxLength(Currency.CodeLength)

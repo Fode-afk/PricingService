@@ -5,6 +5,7 @@ using PricingService.Application.Features.Commands.CreatePrice;
 using PricingService.Application.Features.Commands.UpdatePrice;
 using PricingService.Application.Features.Queries.GetNextScheduledPrice;
 using PricingService.Application.Features.Queries.GetPriceHistory;
+using PricingService.Application.Features.Queries.GetVariantPrices;
 using Dtos = PricingService.Application.Dtos;
 
 namespace PricingService.Api.Grpc.Mapping;
@@ -53,6 +54,11 @@ internal static class PriceGrpcMapper
             Entries = { pagedResult.Items.Select(e => e.ToGrpc()) }
         };
 
+    public static GetVariantPricesQuery ToGetVariantPricesQuery(this GetVariantPricesRequest request) =>
+        new(
+            Guid.Parse(request.ProductVariantId),
+            Guid.Parse(request.VendorId));
+
     public static PriceHistoryEntryDto ToGrpc(this Dtos.PriceHistoryEntryDto dto)
     {
         var result = new PriceHistoryEntryDto
@@ -83,4 +89,12 @@ internal static class PriceGrpcMapper
 
         return result;
     }
+
+    public static VariantPriceDto ToGrpc(this Dtos.VariantPriceDto dto) =>
+        new()
+        { 
+            CurrencyCode = dto.Currency,
+            IsBase = dto.IsBase,
+            CurrentPriceMinor = dto.CurrentPriceMinor
+        };
 }

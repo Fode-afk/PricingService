@@ -38,16 +38,19 @@ public sealed class UpdatePriceCommandHandler(
         if (productSnapshot.VendorId != request.VendorId)
             return Fail(ProductSnapshotErrors.DoesNotBelongToVendor());
 
-        var price = await context.Prices
-            .Include(p => p.Entries)
-            .Include(p => p.History)
-            .FirstOrDefaultAsync(p => p.ProductVariantId == request.ProductVariantId, cancellationToken);
-        if (price is null)
-            return Fail(PriceErrors.NotFound());
-
         var currencyResult = Currency.Create(request.Currency);
         if (currencyResult.IsFailure)
             return currencyResult;
+
+        var price = await context.Prices
+            .Include(p => p.Entries)
+            .Include(p => p.History)
+            .FirstOrDefaultAsync(p =>
+                p.VendorId == vendorSnapshot.VendorId &&
+                p.ProductVariantId == request.ProductVariantId &&
+                p.Currency == currencyResult.Value, cancellationToken);
+        if (price is null)
+            return Fail(PriceErrors.NotFound());
 
         var newPriceResult = Money.FromMinor(request.NewPriceMinor, currencyResult.Value);
         if (newPriceResult.IsFailure)

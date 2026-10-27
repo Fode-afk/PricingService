@@ -28,8 +28,14 @@ public sealed class PriceHistoryEntryConfiguration : IEntityTypeConfiguration<Pr
                   value => Currency.Create(value).Value);
         });
 
+        builder.Property(h => h.Reason)
+            .HasMaxLength(100)
+            .HasConversion<string>();
+
         builder.Property(h => h.ReasonNote)
             .HasMaxLength(500);
+
+        builder.Property(h => h.ChangedBy).IsRequired();
 
         builder.Property(h => h.Source)
             .HasMaxLength(100)

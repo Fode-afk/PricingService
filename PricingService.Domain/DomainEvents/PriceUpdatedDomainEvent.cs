@@ -4,6 +4,6 @@ using migApp.Shared.Domain.ValueObjects;
 namespace PricingService.Domain.DomainEvents;
 
 public sealed record PriceUpdatedDomainEvent(
-    Guid ProductVariantId,
+    Guid PriceId,
     Money CurrentPrice,
     long Version) : IDomainEvent;

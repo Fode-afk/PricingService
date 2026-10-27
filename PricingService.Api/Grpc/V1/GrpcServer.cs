@@ -56,6 +56,17 @@ internal sealed class GrpcServer(IMediator mediator) : Protos.PricingService.Pri
         };
     }
 
+    public override async Task<GetVariantPricesResponse> GetVariantPrices(GetVariantPricesRequest request, ServerCallContext context)
+    {
+        var result = await mediator.Send(
+             request.ToGetVariantPricesQuery(),
+             context.CancellationToken);
+        return new GetVariantPricesResponse
+        {
+            VariantPrices = { result.ThrowIfFailure().Select(p => p.ToGrpc()) }
+        };
+    }
+
     private async Task<PriceStateResponse> GetPriceState(
         string productVariantId,
         string vendorId,

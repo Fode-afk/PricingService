@@ -54,6 +54,7 @@ public sealed class CreatePriceCommandHandler(
             request.ProductVariantId,
             request.VendorId,
             basePriceResult.Value,
+            vendorSnapshot.BaseCurrency,
             createdBy: request.VendorId,
             timeProvider.GetUtcNow());
         if (result.IsFailure)

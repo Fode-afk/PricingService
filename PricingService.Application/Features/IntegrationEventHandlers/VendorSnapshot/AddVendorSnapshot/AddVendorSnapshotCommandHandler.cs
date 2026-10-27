@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using migApp.Shared.Domain.ValueObjects;
 using PricingService.Application.Interfaces.Data;
 
 namespace PricingService.Application.Features.IntegrationEventHandlers.VendorSnapshot.AddVendorSnapshot;
@@ -16,10 +17,19 @@ public sealed class AddVendorSnapshotCommandHandler(
         if (exists)
             return;
 
+        var baseCurrencyResult = Currency.Create(request.BaseCurrency);
+
+        if (baseCurrencyResult.IsFailure)
+        {
+            // log
+            return;
+        }
+        
         context.VendorSnapshots.Add(
             new Domain.Snapshots.VendorSnapshot
             {
                 VendorId = request.VendorId,
+                BaseCurrency = baseCurrencyResult.Value,
                 IsActive = request.IsActive,
                 UpdatedAt = timeProvider.GetUtcNow(),
                 Version = request.Version

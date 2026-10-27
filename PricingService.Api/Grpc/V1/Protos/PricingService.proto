@@ -12,6 +12,7 @@ service PricingService {
 
     rpc GetPriceHistory(GetPriceHistoryRequest) returns (GetPriceHistoryResponse);
     rpc GetNextScheduledPrice(GetNextScheduledPriceRequest) returns (GetNextScheduledPriceResponse);
+    rpc GetVariantPrices(GetVariantPricesRequest) returns (GetVariantPricesResponse);
 }
 
 message CreatePriceRequest {
@@ -59,12 +60,26 @@ message GetPriceHistoryResponse {
 message GetNextScheduledPriceRequest {
     string product_variant_id = 1;
     string vendor_id = 2;
-    google.protobuf.Timestamp at = 3;
-    string currency_code = 4;
+    string currency_code = 3;
 }
 
 message GetNextScheduledPriceResponse {
     PriceEntryDto scheduled_price = 1;
+}
+
+message GetVariantPricesRequest {
+    string product_variant_id = 1;
+    string vendor_id = 2;
+}
+
+message GetVariantPricesResponse {
+    repeated VariantPriceDto variant_prices = 1;
+}
+
+message VariantPriceDto {
+    string currency_code = 1;
+    bool is_base = 2;
+    int64 current_price_minor = 3;
 }
 
 message PriceEntryDto {

@@ -8,5 +8,5 @@ namespace PricingService.Infrastructure.Messaging.IntegrationEvents.Handlers;
 public sealed class PriceArchivedDomainEventHandler(IPublishEndpoint publish) : IPreCommitDomainEventHandler<PriceArchivedDomainEvent>
 {
     public async Task Handle(PriceArchivedDomainEvent notification, CancellationToken cancellationToken) =>
-        await publish.Publish(new PriceArchivedIntegrationEvent(notification.ProductVariantId), cancellationToken);
+        await publish.Publish(new PriceArchivedIntegrationEvent(notification.PriceId), cancellationToken);
 }

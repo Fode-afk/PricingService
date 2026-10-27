@@ -19,17 +19,21 @@ public sealed class Price : AggregateRoot
         Guid id,
         Guid productVariantId,
         Guid vendorId,
+        bool isBase, 
         Currency currency,
         DateTimeOffset createdAt) : base(id)
     {
         ProductVariantId = productVariantId;
         VendorId = vendorId;
+        IsBase = isBase;
         Currency = currency;
         CreatedAt = createdAt;
     }
 
     public Guid ProductVariantId { get; }
     public Guid VendorId { get; }
+
+    public bool IsBase { get; }
 
     public Currency Currency { get; }
 
@@ -58,6 +62,7 @@ public sealed class Price : AggregateRoot
         Guid productVariantId,
         Guid vendorId,
         Money initialAmount,
+        Currency vendorBaseCurrency,
         Guid createdBy,
         DateTimeOffset now)
     {
@@ -69,6 +74,7 @@ public sealed class Price : AggregateRoot
             Guid.NewGuid(),
             productVariantId,
             vendorId,
+            isBase: vendorBaseCurrency == initialAmount.Currency,
             initialAmount.Currency,
             now);
 
@@ -89,7 +95,9 @@ public sealed class Price : AggregateRoot
         price._history.Add(snapshot);
 
         price.RaiseDomainEvent(new PriceCreatedDomainEvent(
+            price.Id,
             price.ProductVariantId,
+            price.IsBase,
             entry.Amount,
             price.Version));
 
@@ -170,7 +178,7 @@ public sealed class Price : AggregateRoot
         IncreaseVersion();
 
         RaiseDomainEvent(new PriceUpdatedDomainEvent(
-            ProductVariantId,
+            Id,
             CurrentEntry(now).Amount,
             Version));
 
@@ -194,7 +202,7 @@ public sealed class Price : AggregateRoot
         UpdatedAt = now;
         IncreaseVersion();
 
-        RaiseDomainEvent(new PriceArchivedDomainEvent(ProductVariantId));
+        RaiseDomainEvent(new PriceArchivedDomainEvent(Id));
 
         return Ok();
     }
