@@ -11,16 +11,13 @@ using migApp.Shared.Behaviours;
 using migApp.Shared.Caching;
 using migApp.Shared.Domain.Primitives;
 using migApp.Shared.Grpc;
-using migApp.Shared.Utils;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Polly;
 using PricingService.Application.Interfaces.Data;
 using PricingService.Application.Interfaces.Metrics;
-using PricingService.Application.Interfaces.Services;
 using PricingService.Infrastructure.Behaviours;
 using PricingService.Infrastructure.Data;
 using PricingService.Infrastructure.DomainEvents;
@@ -28,11 +25,8 @@ using PricingService.Infrastructure.Messaging;
 using PricingService.Infrastructure.Messaging.Consumers;
 using PricingService.Infrastructure.Messaging.IntegrationEvents;
 using PricingService.Infrastructure.Observability;
-using PricingService.Infrastructure.Services;
-using PricingService.Infrastructure.Services.Grpc.Clients;
 using RabbitMQ.Client;
 using ZiggyCreatures.Caching.Fusion;
-using Protos = CurrencyService.Api.Grpc.V1.Protos;
 
 namespace PricingService.Infrastructure.DependencyInjection;
 
@@ -44,22 +38,15 @@ public static class InfrastructureExtensions
             .AddDatabase(configuration)
             .AddCache(configuration)
             .AddHealth(configuration)
-            .AddGrpcServices(configuration)
-            .AddCircuitBreaker()
+            .AddGrpcServices()
             .AddMessaging()
             .AddIntegrationEventHandlers()
             .AddObservability(configuration)
             .AddBehaviours();
 
-    private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        services.AddScoped<ICurrencyService, CurrencyServiceClient>();
-        services.AddScoped<IExchangeRateService, ExchangeRateService>();
-
-        services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
-
-        return services;
-    }
+    private static IServiceCollection AddServices(this IServiceCollection services) =>
+        services
+            .AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
@@ -68,9 +55,7 @@ public static class InfrastructureExtensions
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString, sqlOptions =>
-            {                 
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", Schemas.PricesWrite);
-            }));
+                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", Schemas.PricesWrite)));
 
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
@@ -160,28 +145,11 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    private static IServiceCollection AddGrpcServices(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddGrpcServices(this IServiceCollection services)
     {
-        services.AddGrpc(options =>
-        {
-            options.Interceptors.Add<GrpcExceptionInterceptor>();
-        });
-
-        string CurrencyServiceConnectionString = configuration.GetConnectionString("CurrencyService")
-            ?? throw new InvalidOperationException("CurrencyService connection string is missing");
-
-        services.AddGrpcClient<Protos.CurrencyService.CurrencyServiceClient>(options =>
-        {
-            options.Address = new Uri(CurrencyServiceConnectionString);
-        });
-
+        services.AddGrpc(options => options.Interceptors.Add<GrpcExceptionInterceptor>());
         return services;
     }
-
-    private static IServiceCollection AddCircuitBreaker(this IServiceCollection services) =>
-       services.AddSingleton(sp =>
-           CircuitBreakerPolicy.GetCircuitBreakerPolicy(
-               sp.GetRequiredService<ILogger<IAsyncPolicy>>()));
 
     private static IServiceCollection AddMessaging(this IServiceCollection services)
     {
@@ -236,18 +204,12 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    private static IServiceCollection AddIntegrationEventHandlers(this IServiceCollection services)
-    {
-        var assembly = typeof(IntegrationEventsAssemblyMarker).Assembly;
-
+    private static IServiceCollection AddIntegrationEventHandlers(this IServiceCollection services) =>
         services.Scan(scan => scan
-            .FromAssemblies(assembly)
+            .FromAssemblies(typeof(IntegrationEventsAssemblyMarker).Assembly)
             .AddClasses(classes => classes.AssignableTo(typeof(IPreCommitDomainEventHandler<>)))
             .AsImplementedInterfaces()
             .WithScopedLifetime());
-
-        return services;
-    }
 
     private static IServiceCollection AddObservability(
         this IServiceCollection services,
@@ -280,11 +242,8 @@ public static class InfrastructureExtensions
         return services;
     }
 
-    private static IServiceCollection AddBehaviours(this IServiceCollection services)
-    {
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-        return services;
-    }
+    private static IServiceCollection AddBehaviours(this IServiceCollection services) =>
+        services
+            .AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingBehaviour<,>))
+            .AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 }

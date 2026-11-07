@@ -7,11 +7,11 @@ using PricingService.Application.Features.Queries.GetPriceState;
 
 namespace PricingService.Api.Grpc.V1;
 
-internal sealed class GrpcServer(IMediator mediator) : Protos.PricingService.PricingServiceBase
+internal sealed class GrpcServer(ISender sender) : Protos.PricingService.PricingServiceBase
 {
     public override async Task<PriceStateResponse> CreatePrice(CreatePriceRequest request, ServerCallContext context)
     {
-        var result = await mediator.Send(
+        var result = await sender.Send(
             request.ToCreatePriceCommand(),
             context.CancellationToken);
         result.ThrowIfFailure();
@@ -25,7 +25,7 @@ internal sealed class GrpcServer(IMediator mediator) : Protos.PricingService.Pri
 
     public override async Task<PriceStateResponse> UpdatePrice(UpdatePriceRequest request, ServerCallContext context)
     {
-        var result = await mediator.Send(
+        var result = await sender.Send(
             request.ToUpdatePriceCommand(),
             context.CancellationToken);
         result.ThrowIfFailure();
@@ -37,28 +37,19 @@ internal sealed class GrpcServer(IMediator mediator) : Protos.PricingService.Pri
             context.CancellationToken);
     }
 
-    public override async Task<GetPriceHistoryResponse> GetPriceHistory(GetPriceHistoryRequest request, ServerCallContext context)
-    {
-        var result = await mediator.Send(
+    public override async Task<GetPriceHistoryResponse> GetPriceHistory(GetPriceHistoryRequest request, ServerCallContext context) =>
+        (await sender.Send(
             request.ToGetPriceHistoryQuery(),
-            context.CancellationToken);
-        return result.ThrowIfFailure().ToGetPriceHistoryResponse();
-    }
+            context.CancellationToken)).ThrowIfFailure().ToGetPriceHistoryResponse();
 
-    public override async Task<GetNextScheduledPriceResponse> GetNextScheduledPrice(GetNextScheduledPriceRequest request, ServerCallContext context)
-    {
-        var result = await mediator.Send(
+    public override async Task<PriceEntryDto> GetNextScheduledPrice(GetNextScheduledPriceRequest request, ServerCallContext context) => 
+        (await sender.Send(
             request.ToGetNextScheduledPriceQuery(),
-            context.CancellationToken);
-        return new GetNextScheduledPriceResponse
-        { 
-            ScheduledPrice = result.ThrowIfFailure().ToGrpc()
-        };
-    }
+            context.CancellationToken)).ThrowIfFailure().ToGrpc();
 
     public override async Task<GetVariantPricesResponse> GetVariantPrices(GetVariantPricesRequest request, ServerCallContext context)
     {
-        var result = await mediator.Send(
+        var result = await sender.Send(
              request.ToGetVariantPricesQuery(),
              context.CancellationToken);
         return new GetVariantPricesResponse
@@ -73,7 +64,7 @@ internal sealed class GrpcServer(IMediator mediator) : Protos.PricingService.Pri
         string currencyCode,
         CancellationToken cancellationToken = default)
     {
-        var queryResult = await mediator.Send(
+        var queryResult = await sender.Send(
             new GetPriceStateQuery(
                 Guid.Parse(productVariantId),
                 Guid.Parse(vendorId),

@@ -11,7 +11,7 @@ service PricingService {
     rpc UpdatePrice(UpdatePriceRequest) returns (PriceStateResponse);
 
     rpc GetPriceHistory(GetPriceHistoryRequest) returns (GetPriceHistoryResponse);
-    rpc GetNextScheduledPrice(GetNextScheduledPriceRequest) returns (GetNextScheduledPriceResponse);
+    rpc GetNextScheduledPrice(GetNextScheduledPriceRequest) returns (PriceEntryDto);
     rpc GetVariantPrices(GetVariantPricesRequest) returns (GetVariantPricesResponse);
 }
 
@@ -61,10 +61,6 @@ message GetNextScheduledPriceRequest {
     string product_variant_id = 1;
     string vendor_id = 2;
     string currency_code = 3;
-}
-
-message GetNextScheduledPriceResponse {
-    PriceEntryDto scheduled_price = 1;
 }
 
 message GetVariantPricesRequest {

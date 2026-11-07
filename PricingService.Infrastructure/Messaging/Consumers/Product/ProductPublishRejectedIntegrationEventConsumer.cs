@@ -5,10 +5,10 @@ using PricingService.Application.Features.IntegrationEventHandlers.ProductSnapsh
 
 namespace PricingService.Infrastructure.Messaging.Consumers.Product;
 
-public sealed class ProductPublishRejectedIntegrationEventConsumer(IMediator mediator) : IConsumer<ProductPublishRejectedIntegrationEvent>
+public sealed class ProductPublishRejectedIntegrationEventConsumer(ISender sender) : IConsumer<ProductPublishRejectedIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<ProductPublishRejectedIntegrationEvent> context) =>
-        await mediator.Send(new UpdateProductSnapshotCommand(
+        await sender.Send(new UpdateProductSnapshotCommand(
             context.Message.ProductId,
             context.Message.CanEditOperationalData,
             context.Message.Version), context.CancellationToken);

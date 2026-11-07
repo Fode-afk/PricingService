@@ -5,8 +5,8 @@ using PricingService.Application.Features.IntegrationEventHandlers.ProductSnapsh
 
 namespace PricingService.Infrastructure.Messaging.Consumers.Product;
 
-public sealed class ProductDeletedIntegrationEventConsumer(IMediator mediator) : IConsumer<ProductDeletedIntegrationEvent>
+public sealed class ProductDeletedIntegrationEventConsumer(ISender sender) : IConsumer<ProductDeletedIntegrationEvent>
 {
     public async Task Consume(ConsumeContext<ProductDeletedIntegrationEvent> context) =>
-        await mediator.Send(new DeleteProductSnapshotCommand(context.Message.ProductId), context.CancellationToken);
+        await sender.Send(new DeleteProductSnapshotCommand(context.Message.ProductId), context.CancellationToken);
 }
