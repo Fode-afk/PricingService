@@ -4,4 +4,5 @@ namespace PricingService.Domain.Context;
 
 public sealed record PriceCreationContext(
     bool VendorIsActive,
-    bool ProductCanEditOperationalData) : IVendorContext, IProductContext;
+    bool ProductCanEditOperationalData,
+    bool ProductContainsMarket) : IVendorContext, IProductContext;

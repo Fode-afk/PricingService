@@ -17,16 +17,14 @@ internal sealed class PriceConfiguration : IEntityTypeConfiguration<Price>
         builder.HasIndex(x => x.VendorId);
 
         builder.HasIndex(x =>
-            new { x.ProductVariantId, x.VendorId, x.Currency })
+            new { x.ProductVariantId, x.VendorId, x.Market })
             .IsUnique();
 
-        builder.Property(p => p.IsBase).IsRequired();
-
-        builder.Property(p => p.Currency)
-            .HasMaxLength(Currency.CodeLength)
+        builder.Property(p => p.Market)
+            .HasMaxLength(Market.CodeLength)
             .HasConversion(
-                currency => currency.Code,
-                value => Currency.Create(value).Value);
+                market => market.Code,
+                value => Market.Create(value).Value);
 
         builder.Property(p => p.CreatedAt).IsRequired();
 

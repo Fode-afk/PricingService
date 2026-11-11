@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
@@ -37,24 +38,27 @@ public sealed class CreatePriceCommandHandler(
         if (productSnapshot.VendorId != request.VendorId)
             return Fail(ProductSnapshotErrors.DoesNotBelongToVendor());
 
-        var currencyResult = Currency.Create(request.Currency);
-        if (currencyResult.IsFailure)
-            return currencyResult;  
+        var marketResult = Market.Create(request.Market);
+        if (marketResult.IsFailure)
+            return marketResult;
 
-        var basePriceResult = Money.FromMinor(request.BasePriceMinor, currencyResult.Value);  
+        var market = marketResult.Value;
+
+        var basePriceResult = Money.FromMinor(request.BasePriceMinor, market.Currency);  
         if (basePriceResult.IsFailure)
             return basePriceResult;
 
         var ctx = new PriceCreationContext(
             vendorSnapshot.IsActive,
-            productSnapshot.CanEditOperationalData);
+            productSnapshot.CanEditOperationalData,
+            productSnapshot.Markets.Contains(market));
 
         var result = Price.Create(
             ctx,
             request.ProductVariantId,
             request.VendorId,
             basePriceResult.Value,
-            vendorSnapshot.BaseCurrency,
+            market,
             createdBy: request.VendorId,
             timeProvider.GetUtcNow());
         if (result.IsFailure)
@@ -66,7 +70,7 @@ public sealed class CreatePriceCommandHandler(
         {
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
         {
             return Fail(PriceErrors.AlreadyExists());
         }

@@ -19,6 +19,10 @@ public static class ProductSnapshotErrors
     public static Error AlreadyExists() =>
         Error.AlreadyExists(ProductSnapshotErrorCodes.AlreadyExists,
             "ProductSnapshot already exists.");
+
+    public static Error MarketNotFound() =>
+        Error.NotFound(ProductSnapshotErrorCodes.MarketNotFound,
+            "Market not found.");
 }
 
 public static class ProductSnapshotErrorCodes
@@ -27,4 +31,5 @@ public static class ProductSnapshotErrorCodes
     public const string CannotEditOperationalData = "ProductSnapshot.CannotEditOperationalData";
     public const string DoesNotBelongToVendor = "ProductSnapshot.DoesNotBelongToVendor";
     public const string AlreadyExists = "ProductSnapshot.AlreadyExists";
+    public const string MarketNotFound = "ProductSnapshot.MarketNotFound";
 }

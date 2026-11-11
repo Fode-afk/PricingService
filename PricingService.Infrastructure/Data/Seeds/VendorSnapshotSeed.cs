@@ -14,7 +14,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("a1000000-0000-0000-0000-000000000001"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = true,
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-60),
             Version = 1
@@ -23,7 +22,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("a1000000-0000-0000-0000-000000000002"),
-            BaseCurrency = Currency.Create("EUR").Value,
             IsActive = true,
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-12),
             Version = 2
@@ -36,7 +34,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("b2000000-0000-0000-0000-000000000001"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = false,
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-20),
             Version = 1
@@ -45,7 +42,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("b2000000-0000-0000-0000-000000000002"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = false,
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-3),
             Version = 3
@@ -58,7 +54,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("c3000000-0000-0000-0000-000000000001"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = false,
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-100),
             Version = 5
@@ -67,7 +62,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("c3000000-0000-0000-0000-000000000002"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = false,
             UpdatedAt = DateTimeOffset.UtcNow.AddDays(-45),
             Version = 2
@@ -80,7 +74,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("d4000000-0000-0000-0000-000000000001"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = false,
             UpdatedAt = DateTimeOffset.UtcNow.AddHours(-12),
             Version = 1
@@ -89,7 +82,6 @@ internal static class VendorSnapshotSeed
         new()
         {
             VendorId = Guid.Parse("d4000000-0000-0000-0000-000000000002"),
-            BaseCurrency = Currency.Create("BYN").Value,
             IsActive = false,
             UpdatedAt = DateTimeOffset.UtcNow.AddHours(-1),
             Version = 4

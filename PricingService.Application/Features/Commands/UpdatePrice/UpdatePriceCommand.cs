@@ -7,6 +7,6 @@ public sealed record UpdatePriceCommand(
     Guid ProductVariantId,
     Guid VendorId,
     long NewPriceMinor,
-    string Currency,
+    string Market,
     DateTimeOffset? EffectiveFrom,
     DateTimeOffset? EffectiveTo) : IRequest<IResult>;

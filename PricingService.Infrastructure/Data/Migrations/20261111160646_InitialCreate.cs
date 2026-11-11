@@ -66,8 +66,7 @@ namespace PricingService.Infrastructure.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ProductVariantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     VendorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IsBase = table.Column<bool>(type: "bit", nullable: false),
-                    Currency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
+                    Market = table.Column<string>(type: "nvarchar(2)", maxLength: 2, nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
@@ -86,6 +85,7 @@ namespace PricingService.Infrastructure.Data.Migrations
                     ProductId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     VendorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CanEditOperationalData = table.Column<bool>(type: "bit", nullable: false),
+                    Markets = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
@@ -117,7 +117,6 @@ namespace PricingService.Infrastructure.Data.Migrations
                 columns: table => new
                 {
                     VendorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BaseCurrency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                     Version = table.Column<long>(type: "bigint", nullable: false),
@@ -287,10 +286,10 @@ namespace PricingService.Infrastructure.Data.Migrations
                 column: "ProductVariantId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Prices_ProductVariantId_VendorId_Currency",
+                name: "IX_Prices_ProductVariantId_VendorId_Market",
                 schema: "prices_write",
                 table: "Prices",
-                columns: new[] { "ProductVariantId", "VendorId", "Currency" },
+                columns: new[] { "ProductVariantId", "VendorId", "Market" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

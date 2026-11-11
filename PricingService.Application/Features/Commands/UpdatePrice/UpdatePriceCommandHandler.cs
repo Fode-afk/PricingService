@@ -1,6 +1,5 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
-using migApp.Shared.Domain.Errors;
 using migApp.Shared.Domain.ValueObjects;
 using migApp.Shared.Results;
 using PricingService.Application.Interfaces.Data;
@@ -38,9 +37,11 @@ public sealed class UpdatePriceCommandHandler(
         if (productSnapshot.VendorId != request.VendorId)
             return Fail(ProductSnapshotErrors.DoesNotBelongToVendor());
 
-        var currencyResult = Currency.Create(request.Currency);
-        if (currencyResult.IsFailure)
-            return currencyResult;
+        var marketResult = Market.Create(request.Market);
+        if (marketResult.IsFailure)
+            return marketResult;
+
+        var market = marketResult.Value;
 
         var price = await context.Prices
             .Include(p => p.Entries)
@@ -48,15 +49,18 @@ public sealed class UpdatePriceCommandHandler(
             .FirstOrDefaultAsync(p =>
                 p.VendorId == vendorSnapshot.VendorId &&
                 p.ProductVariantId == request.ProductVariantId &&
-                p.Currency == currencyResult.Value, cancellationToken);
+                p.Market == market, cancellationToken);
         if (price is null)
             return Fail(PriceErrors.NotFound());
 
-        var newPriceResult = Money.FromMinor(request.NewPriceMinor, currencyResult.Value);
+        var newPriceResult = Money.FromMinor(request.NewPriceMinor, market.Currency);
         if (newPriceResult.IsFailure)
             return newPriceResult;
 
-        var ctx = new UpdatePriceContext(vendorSnapshot.IsActive, productSnapshot.CanEditOperationalData);
+        var ctx = new UpdatePriceContext(
+            vendorSnapshot.IsActive,
+            productSnapshot.CanEditOperationalData,
+            productSnapshot.Markets.Contains(market));
 
         var result = price.UpdatePrice(
             ctx,

@@ -26,7 +26,6 @@ public sealed class GetVariantPricesQueryHandler(
 
         return Ok<IReadOnlyList<VariantPriceDto>>([..prices
             .Select(p => p.ToDto(now))
-            .OrderByDescending(x => x.IsBase)
-            .ThenBy(x => x.Currency, StringComparer.Ordinal)]);
+            .OrderByDescending(x => x.Market, StringComparer.Ordinal)]);
     }
 }

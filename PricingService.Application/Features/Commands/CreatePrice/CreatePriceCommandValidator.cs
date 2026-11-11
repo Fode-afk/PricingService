@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using migApp.Shared.Domain.Errors;
+using migApp.Shared.Domain.ValueObjects;
 using PricingService.Domain.Errors;
 
 namespace PricingService.Application.Features.Commands.CreatePrice;
@@ -17,9 +18,9 @@ public sealed class CreatePriceCommandValidator : AbstractValidator<CreatePriceC
         RuleFor(x => x.BasePriceMinor)
             .GreaterThan(0).WithErrorCode(MoneyErrorCodes.AmountNegative);
 
-        RuleFor(x => x.Currency)
+        RuleFor(x => x.Market)
             .NotEmpty()
-            .Length(3)
-            .WithErrorCode(CurrencyErrorCodes.InvalidFormat);
+            .Length(Market.CodeLength)
+            .WithErrorCode(MarketErrorCodes.InvalidFormat);
     }
 }

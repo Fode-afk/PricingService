@@ -7,4 +7,4 @@ namespace PricingService.Application.Features.Queries.GetNextScheduledPrice;
 public sealed record GetNextScheduledPriceQuery(
     Guid ProductVariantId,
     Guid VendorId,
-    string Currency) : IRequest<IResult<PriceEntryDto>>;
+    string Market) : IRequest<IResult<PriceEntryDto>>;

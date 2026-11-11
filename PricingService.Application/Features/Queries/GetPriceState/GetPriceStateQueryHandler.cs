@@ -16,11 +16,9 @@ public sealed class GetPriceStateQueryHandler(
 {
     public async Task<IResult<PriceStateDto>> Handle(GetPriceStateQuery request, CancellationToken cancellationToken)
     {
-        var currencyResult = Currency.Create(request.Currency);
-        if (currencyResult.IsFailure)
-            return Fail<PriceStateDto>(currencyResult.Error);
-
-        var targetCurrency = currencyResult.Value;
+        var marketResult = Market.Create(request.Market);
+        if (marketResult.IsFailure)
+            return Fail<PriceStateDto>(marketResult.Error);
 
         var now = timeProvider.GetUtcNow();
 
@@ -30,7 +28,7 @@ public sealed class GetPriceStateQueryHandler(
             .FirstOrDefaultAsync(p =>
                 p.VendorId == request.VendorId &&
                 p.ProductVariantId == request.ProductVariantId &&
-                p.Currency == targetCurrency, cancellationToken);
+                p.Market == marketResult.Value, cancellationToken);
 
         if (price is null)
             return Fail<PriceStateDto>(PriceErrors.NotFound());

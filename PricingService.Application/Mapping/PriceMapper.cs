@@ -11,6 +11,7 @@ internal static class PriceMapper
     private static PriceHistoryEntryDto ToDto(this PriceHistoryEntry entry) =>
         new(
             entry.Amount.ToMinor(),
+            entry.Amount.Currency,
             entry.Reason.ToString(),
             entry.ReasonNote,
             entry.ChangedBy,
@@ -24,9 +25,13 @@ internal static class PriceMapper
             entry.EffectiveFrom,
             entry.EffectiveTo);
 
-    public static VariantPriceDto ToDto(this Price price, DateTimeOffset now) =>
-        new(
-            price.Currency,
-            price.IsBase,
-            price.CurrentEntry(now).Amount.ToMinor());
+    public static VariantPriceDto ToDto(this Price price, DateTimeOffset now)
+    {
+        var currentEntryPrice = price.CurrentEntry(now).Amount;
+
+        return new VariantPriceDto(
+            price.Market,
+            currentEntryPrice.ToMinor(),
+            currentEntryPrice.Currency);
+    }
 }

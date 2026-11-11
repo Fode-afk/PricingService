@@ -1,10 +1,13 @@
-﻿namespace PricingService.Domain.Snapshots;
+﻿using migApp.Shared.Domain.ValueObjects;
+
+namespace PricingService.Domain.Snapshots;
 
 public sealed class ProductSnapshot
 {
     public Guid ProductId { get; init; }
     public Guid VendorId { get; init; }
     public bool CanEditOperationalData { get; set; }
+    public List<Market> Markets { get; set; } = [];
     public DateTimeOffset UpdatedAt { get; set; }
     public long Version { get; set; }
 }

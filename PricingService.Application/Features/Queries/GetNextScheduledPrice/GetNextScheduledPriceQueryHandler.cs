@@ -16,18 +16,16 @@ public sealed class GetNextScheduledPriceQueryHandler(
 {
     public async Task<IResult<PriceEntryDto>> Handle(GetNextScheduledPriceQuery request, CancellationToken cancellationToken)
     {
-        var currencyResult = Currency.Create(request.Currency);
-        if (currencyResult.IsFailure)
-            return Fail<PriceEntryDto>(currencyResult.Error);
-
-        var targetCurrency = currencyResult.Value;
+        var marketResult = Market.Create(request.Market);
+        if (marketResult.IsFailure)
+            return Fail<PriceEntryDto>(marketResult.Error);
 
         var scheduled = await context.Prices
             .AsNoTracking()
             .Where(p => 
                 p.VendorId == request.VendorId &&
                 p.ProductVariantId == request.ProductVariantId &&
-                p.Currency == targetCurrency)
+                p.Market == marketResult.Value)
             .SelectMany(p => p.Entries)
             .Where(e => e.EffectiveFrom > timeProvider.GetUtcNow())
             .OrderBy(e => e.EffectiveFrom)

@@ -14,28 +14,23 @@ namespace PricingService.Domain.Models;
 public sealed class Price : AggregateRoot
 {
     private Price() : base(Guid.Empty) { }
-
     private Price(
         Guid id,
         Guid productVariantId,
         Guid vendorId,
-        bool isBase, 
-        Currency currency,
+        Market market,
         DateTimeOffset createdAt) : base(id)
     {
         ProductVariantId = productVariantId;
         VendorId = vendorId;
-        IsBase = isBase;
-        Currency = currency;
+        Market = market;
         CreatedAt = createdAt;
     }
 
     public Guid ProductVariantId { get; }
     public Guid VendorId { get; }
 
-    public bool IsBase { get; }
-
-    public Currency Currency { get; }
+    public Market Market { get; }
 
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -62,7 +57,7 @@ public sealed class Price : AggregateRoot
         Guid productVariantId,
         Guid vendorId,
         Money initialAmount,
-        Currency vendorBaseCurrency,
+        Market market,
         Guid createdBy,
         DateTimeOffset now)
     {
@@ -74,8 +69,7 @@ public sealed class Price : AggregateRoot
             Guid.NewGuid(),
             productVariantId,
             vendorId,
-            isBase: vendorBaseCurrency == initialAmount.Currency,
-            initialAmount.Currency,
+            market,
             now);
 
         var entryResult = PriceEntry.Create(price.Id, initialAmount, now);
@@ -97,7 +91,7 @@ public sealed class Price : AggregateRoot
         price.RaiseDomainEvent(new PriceCreatedDomainEvent(
             price.Id,
             price.ProductVariantId,
-            price.IsBase,
+            price.Market,
             entry.Amount,
             price.Version));
 
@@ -119,7 +113,7 @@ public sealed class Price : AggregateRoot
         if (result.IsFailure)
             return result;
 
-        if (newAmount.Currency != Currency)
+        if (newAmount.Currency != Market.Currency)
             return Fail(PriceErrors.CurrencyMismatch());
 
         var from = effectiveFrom ?? now;

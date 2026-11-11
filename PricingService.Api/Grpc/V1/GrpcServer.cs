@@ -19,7 +19,7 @@ internal sealed class GrpcServer(ISender sender) : Protos.PricingService.Pricing
         return await GetPriceState(
             request.ProductVariantId,
             request.VendorId,
-            request.CurrencyCode,
+            request.MarketCode,
             context.CancellationToken);
     }
 
@@ -33,7 +33,7 @@ internal sealed class GrpcServer(ISender sender) : Protos.PricingService.Pricing
         return await GetPriceState(
             request.ProductVariantId,
             request.VendorId,
-            request.CurrencyCode,
+            request.MarketCode,
             context.CancellationToken);
     }
 
@@ -61,14 +61,14 @@ internal sealed class GrpcServer(ISender sender) : Protos.PricingService.Pricing
     private async Task<PriceStateResponse> GetPriceState(
         string productVariantId,
         string vendorId,
-        string currencyCode,
+        string marketCode,
         CancellationToken cancellationToken = default)
     {
         var queryResult = await sender.Send(
             new GetPriceStateQuery(
                 Guid.Parse(productVariantId),
                 Guid.Parse(vendorId),
-                currencyCode), cancellationToken);
+                marketCode), cancellationToken);
 
         var state = queryResult.ThrowIfFailure();
 

@@ -11,4 +11,4 @@ public sealed record GetPriceHistoryQuery(
     DateTimeOffset? To,
     int Page,
     int PageSize,
-    string Currency) : IRequest<IResult<PagedResult<PriceHistoryEntryDto>>>;
+    string Market) : IRequest<IResult<PagedResult<PriceHistoryEntryDto>>>;

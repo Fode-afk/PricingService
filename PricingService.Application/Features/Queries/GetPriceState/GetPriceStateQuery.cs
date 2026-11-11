@@ -6,5 +6,5 @@ namespace PricingService.Application.Features.Queries.GetPriceState;
 
 public sealed record GetPriceStateQuery(
     Guid ProductVariantId,
-    Guid VendorId, 
-    string Currency) : IRequest<IResult<PriceStateDto>>;
+    Guid VendorId,
+    string Market) : IRequest<IResult<PriceStateDto>>;

@@ -17,14 +17,14 @@ internal static class PriceGrpcMapper
             Guid.Parse(request.ProductVariantId),
             Guid.Parse(request.VendorId),
             request.BasePriceMinor,
-            request.CurrencyCode);
+            request.MarketCode);
 
     public static UpdatePriceCommand ToUpdatePriceCommand(this UpdatePriceRequest request) =>
         new(
             Guid.Parse(request.ProductVariantId),
             Guid.Parse(request.VendorId),
             request.NewPriceMinor,
-            request.CurrencyCode,
+            request.MarketCode,
             request.HasEffectiveFrom ? DateTimeOffset.Parse(request.EffectiveFrom) : null,
             request.HasEffectiveTo ? DateTimeOffset.Parse(request.EffectiveTo) : null);
 
@@ -36,13 +36,13 @@ internal static class PriceGrpcMapper
             request.HasTo ? DateTimeOffset.Parse(request.To) : null,
             request.Page,
             request.PageSize,
-            request.CurrencyCode);
+            request.MarketCode);
 
     public static GetNextScheduledPriceQuery ToGetNextScheduledPriceQuery(this GetNextScheduledPriceRequest request) =>
         new(
             Guid.Parse(request.ProductVariantId),
             Guid.Parse(request.VendorId),
-            request.CurrencyCode);
+            request.MarketCode);
 
     public static GetPriceHistoryResponse ToGetPriceHistoryResponse(this PagedResult<Dtos.PriceHistoryEntryDto> pagedResult) =>
         new()
@@ -64,6 +64,7 @@ internal static class PriceGrpcMapper
         var result = new PriceHistoryEntryDto
         {
             PriceMinor = dto.AmountMinor,
+            Currency = dto.Currency,
             Reason = dto.Reason,
             ChangedBy = dto.ChangedBy.ToString(),
             Source = dto.Source
@@ -93,8 +94,8 @@ internal static class PriceGrpcMapper
     public static VariantPriceDto ToGrpc(this Dtos.VariantPriceDto dto) =>
         new()
         { 
-            CurrencyCode = dto.Currency,
-            IsBase = dto.IsBase,
-            CurrentPriceMinor = dto.CurrentPriceMinor
+            MarketCode = dto.Market,
+            CurrentPriceMinor = dto.CurrentPriceMinor,
+            CurrencyCode = dto.Currency
         };
 }

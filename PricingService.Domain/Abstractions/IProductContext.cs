@@ -3,4 +3,5 @@
 internal interface IProductContext
 {
     bool ProductCanEditOperationalData { get; }
+    bool ProductContainsMarket { get; }
 }

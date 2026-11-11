@@ -11,7 +11,7 @@ public sealed class PriceCreatedDomainEventHandler(IPublishEndpoint publish) : I
         await publish.Publish(new PriceCreatedIntegrationEvent(
             notification.PriceId,
             notification.ProductVariantId,
-            notification.IsBase,
+            notification.Market,
             notification.CurrentPrice.ToMinor(),
             notification.CurrentPrice.Currency,
             notification.Version), cancellationToken);

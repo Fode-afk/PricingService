@@ -13,7 +13,7 @@ using PricingService.Infrastructure.Data;
 namespace PricingService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261024165138_InitialCreate")]
+    [Migration("20261111160646_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -206,13 +206,10 @@ namespace PricingService.Infrastructure.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<string>("Currency")
+                    b.Property<string>("Market")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<bool>("IsBase")
-                        .HasColumnType("bit");
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
 
                     b.Property<Guid>("ProductVariantId")
                         .HasColumnType("uniqueidentifier");
@@ -237,7 +234,7 @@ namespace PricingService.Infrastructure.Data.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.HasIndex("ProductVariantId", "VendorId", "Currency")
+                    b.HasIndex("ProductVariantId", "VendorId", "Market")
                         .IsUnique();
 
                     b.ToTable("Prices", "prices_write");
@@ -352,6 +349,10 @@ namespace PricingService.Infrastructure.Data.Migrations
                     b.Property<bool>("CanEditOperationalData")
                         .HasColumnType("bit");
 
+                    b.PrimitiveCollection<string>("Markets")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -405,11 +406,6 @@ namespace PricingService.Infrastructure.Data.Migrations
                     b.Property<Guid>("VendorId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("BaseCurrency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");

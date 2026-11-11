@@ -7,4 +7,4 @@ public sealed record CreatePriceCommand(
     Guid ProductVariantId,
     Guid VendorId, 
     long BasePriceMinor,
-    string Currency) : IRequest<IResult>;
+    string Market) : IRequest<IResult>;

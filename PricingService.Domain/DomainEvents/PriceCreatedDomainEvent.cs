@@ -6,6 +6,6 @@ namespace PricingService.Domain.DomainEvents;
 public sealed record PriceCreatedDomainEvent(
     Guid PriceId,
     Guid ProductVariantId,
-    bool IsBase,
+    Market Market,
     Money CurrentPrice,
     long Version) : IDomainEvent;

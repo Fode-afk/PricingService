@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using migApp.Shared.Domain.Errors;
+using migApp.Shared.Domain.ValueObjects;
 using PricingService.Domain.Errors;
 
 namespace PricingService.Application.Features.Queries.GetPriceHistory;
@@ -27,9 +28,9 @@ public sealed class GetPriceHistoryQueryValidator : AbstractValidator<GetPriceHi
             .InclusiveBetween(1, 100)
             .WithErrorCode(PriceErrorCodes.InvalidPagination);
 
-        RuleFor(x => x.Currency)
+        RuleFor(x => x.Market)
             .NotEmpty()
-            .Length(3)
-            .WithErrorCode(CurrencyErrorCodes.InvalidFormat);
+            .Length(Market.CodeLength)
+            .WithErrorCode(MarketErrorCodes.InvalidFormat);
     }
 }

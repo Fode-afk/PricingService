@@ -13,18 +13,16 @@ public sealed class GetPriceHistoryQueryHandler(IAppDbContext context) : IReques
 {
     public async Task<IResult<PagedResult<PriceHistoryEntryDto>>> Handle(GetPriceHistoryQuery request, CancellationToken cancellationToken)
     {
-        var currencyResult = Currency.Create(request.Currency);
-        if (currencyResult.IsFailure)
-            return Fail<PagedResult<PriceHistoryEntryDto>>(currencyResult.Error);
-
-        var targetCurrency = currencyResult.Value;
+        var marketResult = Market.Create(request.Market);
+        if (marketResult.IsFailure)
+            return Fail<PagedResult<PriceHistoryEntryDto>>(marketResult.Error);
 
         var query = context.Prices
             .AsNoTracking()
             .Where(p => 
                 p.VendorId == request.VendorId &&
                 p.ProductVariantId == request.ProductVariantId &&
-                p.Currency == targetCurrency)
+                p.Market == marketResult.Value)
             .SelectMany(p => p.History);
 
         if (request.From is not null)

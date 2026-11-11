@@ -19,24 +19,25 @@ message CreatePriceRequest {
     string product_variant_id = 1;
     string vendor_id = 2; 
     int64 base_price_minor = 3;
-    string currency_code = 4;
+    string market_code = 4;
 }
 
 message UpdatePriceRequest {
     string product_variant_id = 1;
     string vendor_id = 2;
     int64 new_price_minor = 3;
-    string currency_code = 4;
+    string market_code = 4;
     optional string effective_from = 5;
     optional string effective_to = 6;
 }
 
 message PriceHistoryEntryDto {
     int64 price_minor = 1;
-    string reason = 2;
-    string reason_note = 3;
-    string changed_by = 4;
-    string source = 5;
+    string currency = 2;
+    string reason = 3;
+    string reason_note = 4;
+    string changed_by = 5;
+    string source = 6;
 }
 
 message GetPriceHistoryRequest {
@@ -46,7 +47,7 @@ message GetPriceHistoryRequest {
     optional string to = 4;
     int32 page = 5;
     int32 page_size = 6;
-    string currency_code = 7;
+    string market_code = 7;
 }
 
 message GetPriceHistoryResponse {
@@ -60,7 +61,7 @@ message GetPriceHistoryResponse {
 message GetNextScheduledPriceRequest {
     string product_variant_id = 1;
     string vendor_id = 2;
-    string currency_code = 3;
+    string market_code = 3;
 }
 
 message GetVariantPricesRequest {
@@ -73,9 +74,9 @@ message GetVariantPricesResponse {
 }
 
 message VariantPriceDto {
-    string currency_code = 1;
-    bool is_base = 2;
-    int64 current_price_minor = 3;
+    string market_code = 1;
+    int64 current_price_minor = 2;
+    string currency_code = 3;
 }
 
 message PriceEntryDto {

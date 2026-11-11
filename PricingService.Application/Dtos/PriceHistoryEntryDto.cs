@@ -2,6 +2,7 @@
 
 public sealed record PriceHistoryEntryDto(
     long AmountMinor,
+    string Currency,
     string Reason,
     string? ReasonNote,
     Guid ChangedBy,
